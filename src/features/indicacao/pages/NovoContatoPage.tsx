@@ -1,8 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { z } from "zod";
 import { useApp } from "../AppContext";
 import { PrimaryButton } from "../components/PrimaryButton";
+
+const contatoSchema = z.object({
+  nome: z.string().trim().min(1).max(100),
+  email: z.string().trim().email().max(255),
+  cnpj: z.string().trim().min(1).max(18),
+  razaoSocial: z.string().trim().max(200),
+  nomeFantasia: z.string().trim().max(200),
+  telefoneFixo: z.string().trim().max(20),
+  celular: z.string().trim().max(20),
+  observacao: z.string().trim().max(1000),
+});
 
 function maskCnpj(value: string) {
   const d = value.replace(/\D/g, "").slice(0, 14);
@@ -16,13 +28,9 @@ function maskCnpj(value: string) {
 function maskPhone(value: string) {
   const d = value.replace(/\D/g, "").slice(0, 11);
   if (d.length <= 10) {
-    return d
-      .replace(/^(\d{2})(\d)/, "($1) $2")
-      .replace(/(\d{4})(\d)/, "$1-$2");
+    return d.replace(/^(\d{2})(\d)/, "($1) $2").replace(/(\d{4})(\d)/, "$1-$2");
   }
-  return d
-    .replace(/^(\d{2})(\d)/, "($1) $2")
-    .replace(/(\d{5})(\d)/, "$1-$2");
+  return d.replace(/^(\d{2})(\d)/, "($1) $2").replace(/(\d{5})(\d)/, "$1-$2");
 }
 
 export function NovoContatoPage() {
@@ -37,6 +45,7 @@ export function NovoContatoPage() {
     nomeFantasia: "",
     telefoneFixo: "",
     celular: "",
+    observacao: "",
   });
 
   const lookupCnpj = async (digits: string) => {
@@ -47,7 +56,7 @@ export function NovoContatoPage() {
     try {
       const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${digits}`);
       if (!res.ok) {
-        toast.error("CNPJ não encontrado na BrasilAPI.");
+        toast.error("CNPJ não encontrado.");
         return;
       }
       const data = await res.json();
@@ -59,9 +68,9 @@ export function NovoContatoPage() {
         telefoneFixo: ddd ? maskPhone(ddd) : f.telefoneFixo,
         email: data.email ?? f.email,
       }));
-      toast.success("Dados preenchidos via BrasilAPI.");
+      toast.success("Dados preenchidos automaticamente.");
     } catch {
-      toast.error("Erro ao consultar BrasilAPI.");
+      toast.error("Erro ao consultar CNPJ.");
     } finally {
       setLoadingCnpj(false);
     }
@@ -81,14 +90,27 @@ export function NovoContatoPage() {
   }, [form.cnpj]);
 
   if (!user) return null;
+  if (user.role === "usuario") {
+    return (
+      <div className="max-w-3xl mx-auto py-20 font-body">
+        <h1 className="font-display text-4xl font-bold uppercase tracking-tight">
+          Acesso restrito
+        </h1>
+        <p className="mt-3 text-sm text-on-surface-variant">
+          Contatos são permitidos somente para Usuário RA.
+        </p>
+      </div>
+    );
+  }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.nome.trim() || !form.email.trim() || !form.cnpj.trim()) {
+    const parsed = contatoSchema.safeParse(form);
+    if (!parsed.success) {
       toast.error("Preencha Nome, Email e CNPJ.");
       return;
     }
-    const result = createContato(form);
+    const result = await createContato(parsed.data);
     if (!result.ok) {
       toast.error(result.error || "Erro ao criar contato.");
       return;
@@ -104,6 +126,7 @@ export function NovoContatoPage() {
       nomeFantasia: "",
       telefoneFixo: "",
       celular: "",
+      observacao: "",
     });
   };
 
@@ -112,14 +135,15 @@ export function NovoContatoPage() {
       <header className="relative py-6 border-b border-outline-variant/10">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div className="space-y-2">
-            <h1 className="font-display text-3xl md:text-5xl font-bold tracking-tighter uppercase leading-none">
-              Novo <br />
-              <span className="italic font-light text-on-surface-variant">Contato</span>
-            </h1>
+             <h1 className="font-display text-3xl md:text-5xl font-bold tracking-tighter uppercase leading-none">
+               Novo Contato <br />
+               <span className="italic font-light text-on-surface-variant">Quente</span>
+             </h1>
           </div>
           <div className="max-w-xs text-right hidden md:block">
             <p className="text-xs text-on-surface-variant font-medium leading-relaxed">
-              Registre um novo contato corporativo. Use o CNPJ para preencher os dados automaticamente via BrasilAPI.
+              Registre um novo contato corporativo. Use o CNPJ para preencher os dados
+              automaticamente.
             </p>
           </div>
         </div>
@@ -129,8 +153,12 @@ export function NovoContatoPage() {
         {/* Section 01: CNPJ Lookup */}
         <section className="space-y-5">
           <div className="flex items-center gap-3">
-            <span className="font-display text-2xl font-bold text-outline-variant/30 italic">01</span>
-            <h2 className="font-display text-sm font-bold uppercase tracking-widest">Identificação Empresarial</h2>
+            <span className="font-display text-2xl font-bold text-outline-variant/30 italic">
+              01
+            </span>
+            <h2 className="font-display text-sm font-bold uppercase tracking-widest">
+              Identificação Empresarial
+            </h2>
             <div className="h-px flex-1 bg-outline-variant/10" />
           </div>
 
@@ -155,13 +183,13 @@ export function NovoContatoPage() {
               label="Razão Social"
               value={form.razaoSocial}
               onChange={(v) => setForm({ ...form, razaoSocial: v })}
-              placeholder="Preenchido via BrasilAPI"
+              placeholder="Preenchido automaticamente"
             />
             <EditorialField
               label="Nome Fantasia"
               value={form.nomeFantasia}
               onChange={(v) => setForm({ ...form, nomeFantasia: v })}
-              placeholder="Preenchido via BrasilAPI"
+              placeholder="Preenchido automaticamente"
             />
           </div>
         </section>
@@ -169,8 +197,12 @@ export function NovoContatoPage() {
         {/* Section 02: Contato */}
         <section className="space-y-5">
           <div className="flex items-center gap-3">
-            <span className="font-display text-2xl font-bold text-outline-variant/30 italic">02</span>
-            <h2 className="font-display text-sm font-bold uppercase tracking-widest">Dados de Contato</h2>
+            <span className="font-display text-2xl font-bold text-outline-variant/30 italic">
+              02
+            </span>
+            <h2 className="font-display text-sm font-bold uppercase tracking-widest">
+              Dados de Contato
+            </h2>
             <div className="h-px flex-1 bg-outline-variant/10" />
           </div>
 
@@ -181,13 +213,13 @@ export function NovoContatoPage() {
               onChange={(v) => setForm({ ...form, nome: v })}
               placeholder="Ex: Carlos Oliveira"
             />
-            <EditorialField
-              label="Email *"
-              type="email"
-              value={form.email}
-              onChange={(v) => setForm({ ...form, email: v })}
-              placeholder="contato@empresa.com"
-            />
+             <EditorialField
+               label="Email do Lead *"
+               type="email"
+               value={form.email}
+               onChange={(v) => setForm({ ...form, email: v })}
+               placeholder="contato@empresa.com"
+             />
             <EditorialField
               label="Telefone Fixo"
               value={form.telefoneFixo}
@@ -200,13 +232,19 @@ export function NovoContatoPage() {
               onChange={(v) => setForm({ ...form, celular: maskPhone(v) })}
               placeholder="(XX) XXXXX-XXXX"
             />
+            <EditorialTextarea
+              label="Observações"
+              value={form.observacao}
+              onChange={(v) => setForm({ ...form, observacao: v.slice(0, 1000) })}
+              placeholder="Informações relevantes sobre o lead"
+            />
           </div>
         </section>
 
         <footer className="pt-6 border-t border-outline-variant/10 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3 text-xs font-medium text-on-surface-variant">
             <div className="h-2 w-2 rounded-full bg-primary-container animate-pulse" />
-            Dados enriquecidos via BrasilAPI
+            Dados enriquecidos automaticamente
           </div>
           <PrimaryButton type="submit" className="px-8 py-4 text-xs tracking-[0.2em] uppercase">
             Registrar Contato
@@ -241,6 +279,34 @@ function EditorialField({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className="w-full bg-transparent border-0 border-b border-outline-variant/30 py-2 px-0 text-on-surface placeholder:text-outline-variant/50 outline-none focus:outline-none focus:ring-0 focus:border-primary-container caret-primary-container transition-all text-sm font-medium"
+      />
+    </div>
+  );
+}
+
+function EditorialTextarea({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <div className="group space-y-2 md:col-span-2">
+      <label className="block text-[10px] uppercase tracking-[0.2em] text-outline font-black group-focus-within:text-primary-container transition-colors">
+        {label}
+      </label>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        rows={4}
+        maxLength={1000}
+        className="w-full resize-none bg-transparent border-0 border-b border-outline-variant/30 py-2 px-0 text-on-surface placeholder:text-outline-variant/50 outline-none focus:outline-none focus:ring-0 focus:border-primary-container caret-primary-container transition-all text-sm font-medium"
       />
     </div>
   );

@@ -9,14 +9,22 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppNovoContatoRouteImport } from './routes/app.novo-contato'
 import { Route as AppNovaRouteImport } from './routes/app.nova'
 import { Route as AppIndicacoesRouteImport } from './routes/app.indicacoes'
+import { Route as AppGestaoUsuariosRouteImport } from './routes/app.gestao-usuarios'
 import { Route as AppContatosRouteImport } from './routes/app.contatos'
+import { Route as AppConfiguracoesRouteImport } from './routes/app.configuracoes'
 import { Route as AppAnalyticsRouteImport } from './routes/app.analytics'
 
+const CadastroRoute = CadastroRouteImport.update({
+  id: '/cadastro',
+  path: '/cadastro',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppRoute = AppRouteImport.update({
   id: '/app',
   path: '/app',
@@ -42,9 +50,19 @@ const AppIndicacoesRoute = AppIndicacoesRouteImport.update({
   path: '/indicacoes',
   getParentRoute: () => AppRoute,
 } as any)
+const AppGestaoUsuariosRoute = AppGestaoUsuariosRouteImport.update({
+  id: '/gestao-usuarios',
+  path: '/gestao-usuarios',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppContatosRoute = AppContatosRouteImport.update({
   id: '/contatos',
   path: '/contatos',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppConfiguracoesRoute = AppConfiguracoesRouteImport.update({
+  id: '/configuracoes',
+  path: '/configuracoes',
   getParentRoute: () => AppRoute,
 } as any)
 const AppAnalyticsRoute = AppAnalyticsRouteImport.update({
@@ -56,8 +74,11 @@ const AppAnalyticsRoute = AppAnalyticsRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
+  '/cadastro': typeof CadastroRoute
   '/app/analytics': typeof AppAnalyticsRoute
+  '/app/configuracoes': typeof AppConfiguracoesRoute
   '/app/contatos': typeof AppContatosRoute
+  '/app/gestao-usuarios': typeof AppGestaoUsuariosRoute
   '/app/indicacoes': typeof AppIndicacoesRoute
   '/app/nova': typeof AppNovaRoute
   '/app/novo-contato': typeof AppNovoContatoRoute
@@ -65,8 +86,11 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
+  '/cadastro': typeof CadastroRoute
   '/app/analytics': typeof AppAnalyticsRoute
+  '/app/configuracoes': typeof AppConfiguracoesRoute
   '/app/contatos': typeof AppContatosRoute
+  '/app/gestao-usuarios': typeof AppGestaoUsuariosRoute
   '/app/indicacoes': typeof AppIndicacoesRoute
   '/app/nova': typeof AppNovaRoute
   '/app/novo-contato': typeof AppNovoContatoRoute
@@ -75,8 +99,11 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
+  '/cadastro': typeof CadastroRoute
   '/app/analytics': typeof AppAnalyticsRoute
+  '/app/configuracoes': typeof AppConfiguracoesRoute
   '/app/contatos': typeof AppContatosRoute
+  '/app/gestao-usuarios': typeof AppGestaoUsuariosRoute
   '/app/indicacoes': typeof AppIndicacoesRoute
   '/app/nova': typeof AppNovaRoute
   '/app/novo-contato': typeof AppNovoContatoRoute
@@ -86,8 +113,11 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/app'
+    | '/cadastro'
     | '/app/analytics'
+    | '/app/configuracoes'
     | '/app/contatos'
+    | '/app/gestao-usuarios'
     | '/app/indicacoes'
     | '/app/nova'
     | '/app/novo-contato'
@@ -95,8 +125,11 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/app'
+    | '/cadastro'
     | '/app/analytics'
+    | '/app/configuracoes'
     | '/app/contatos'
+    | '/app/gestao-usuarios'
     | '/app/indicacoes'
     | '/app/nova'
     | '/app/novo-contato'
@@ -104,8 +137,11 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/app'
+    | '/cadastro'
     | '/app/analytics'
+    | '/app/configuracoes'
     | '/app/contatos'
+    | '/app/gestao-usuarios'
     | '/app/indicacoes'
     | '/app/nova'
     | '/app/novo-contato'
@@ -114,10 +150,18 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
+  CadastroRoute: typeof CadastroRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/cadastro': {
+      id: '/cadastro'
+      path: '/cadastro'
+      fullPath: '/cadastro'
+      preLoaderRoute: typeof CadastroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/app': {
       id: '/app'
       path: '/app'
@@ -153,11 +197,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndicacoesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/gestao-usuarios': {
+      id: '/app/gestao-usuarios'
+      path: '/gestao-usuarios'
+      fullPath: '/app/gestao-usuarios'
+      preLoaderRoute: typeof AppGestaoUsuariosRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/contatos': {
       id: '/app/contatos'
       path: '/contatos'
       fullPath: '/app/contatos'
       preLoaderRoute: typeof AppContatosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/configuracoes': {
+      id: '/app/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/app/configuracoes'
+      preLoaderRoute: typeof AppConfiguracoesRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/analytics': {
@@ -172,7 +230,9 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppAnalyticsRoute: typeof AppAnalyticsRoute
+  AppConfiguracoesRoute: typeof AppConfiguracoesRoute
   AppContatosRoute: typeof AppContatosRoute
+  AppGestaoUsuariosRoute: typeof AppGestaoUsuariosRoute
   AppIndicacoesRoute: typeof AppIndicacoesRoute
   AppNovaRoute: typeof AppNovaRoute
   AppNovoContatoRoute: typeof AppNovoContatoRoute
@@ -180,7 +240,9 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppAnalyticsRoute: AppAnalyticsRoute,
+  AppConfiguracoesRoute: AppConfiguracoesRoute,
   AppContatosRoute: AppContatosRoute,
+  AppGestaoUsuariosRoute: AppGestaoUsuariosRoute,
   AppIndicacoesRoute: AppIndicacoesRoute,
   AppNovaRoute: AppNovaRoute,
   AppNovoContatoRoute: AppNovoContatoRoute,
@@ -191,7 +253,17 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
+  CadastroRoute: CadastroRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}

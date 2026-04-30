@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { useApp } from "../AppContext";
@@ -42,6 +43,7 @@ function maskCnpj(value: string) {
 
 export function NovaIndicacaoPage() {
   const { user, createIndicacao, countCltThisMonth, creditoAtual, indicacoes } = useApp();
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     leadNome: "",
     cnpj: "",
@@ -56,7 +58,20 @@ export function NovaIndicacaoPage() {
     observacao: "",
   });
   const [loadingCnpj, setLoadingCnpj] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState("");
   const lastFetchedRef = useRef<string>("");
+
+  useEffect(() => {
+    if (!user) return;
+    setForm((f) => ({
+      ...f,
+      emailIndicador: user.loginId || user.email,
+      setor: user.setor,
+      funcao: user.funcao || "",
+      contrato: user.contrato,
+    }));
+  }, [user]);
 
   useEffect(() => {
     const digits = form.cnpj.replace(/\D/g, "");
@@ -67,7 +82,7 @@ export function NovaIndicacaoPage() {
         try {
           const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${digits}`);
           if (!res.ok) {
-            toast.error("CNPJ não encontrado na BrasilAPI.");
+            toast.error("CNPJ não encontrado.");
             return;
           }
           const data = await res.json();
@@ -75,9 +90,9 @@ export function NovaIndicacaoPage() {
             ...f,
             empresa: data.nome_fantasia || data.razao_social || f.empresa,
           }));
-          toast.success("Empresa preenchida via BrasilAPI.");
+          toast.success("Empresa preenchida automaticamente.");
         } catch {
-          toast.error("Erro ao consultar BrasilAPI.");
+          toast.error("Erro ao consultar CNPJ.");
         } finally {
           setLoadingCnpj(false);
         }
@@ -105,29 +120,50 @@ export function NovaIndicacaoPage() {
   })();
   const progresso = Math.min(100, Math.round((trimAtual / META_TRIMESTRAL) * 100));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setSubmitMessage("");
+    if (cltBlocked) {
+      const message = `Você atingiu o limite de ${LIMITE_CLT_MES} indicações para este mês.`;
+      setSubmitMessage(message);
+      toast.error(message);
+      return;
+    }
     if (!form.leadNome.trim() || !form.empresa.trim() || !form.emailLead.trim()) {
-      toast.error("Preencha os campos obrigatórios.");
+      const message = "Preencha Nome do Lead, Empresa e Email antes de confirmar.";
+      setSubmitMessage(message);
+      toast.error(message);
       return;
     }
-    const result = createIndicacao(form);
-    if (!result.ok) {
-      toast.error(result.error || "Erro ao criar indicação.");
-      return;
+    setIsSubmitting(true);
+    try {
+      const result = await createIndicacao(form);
+      if (!result.ok) {
+        toast.error(result.error || "Erro ao criar indicação.");
+        return;
+      }
+      toast.success("Indicação criada com sucesso!", {
+        description: `Lead ${form.leadNome} salvo com status “Indicado”.`,
+      });
+      setForm({
+        ...form,
+        leadNome: "",
+        cnpj: "",
+        empresa: "",
+        telefone: "",
+        emailLead: "",
+        observacao: "",
+      });
+      navigate({ to: "/app/indicacoes" });
+    } catch (error) {
+      console.error("Erro ao criar indicação", error);
+      const message = "Não foi possível confirmar o registro. Tente novamente.";
+      setSubmitMessage(message);
+      toast.error(message);
+    } finally {
+      setIsSubmitting(false);
     }
-    toast.success("Indicação criada com sucesso!", {
-      description: `Lead ${form.leadNome} salvo com status “Indicado”.`,
-    });
-    setForm({
-      ...form,
-      leadNome: "",
-      cnpj: "",
-      empresa: "",
-      telefone: "",
-      emailLead: "",
-      observacao: "",
-    });
   };
 
   return (
@@ -271,10 +307,16 @@ export function NovaIndicacaoPage() {
               R$ {VALOR_RECOMPENSA} por contrato implantado
             </div>
             <div className="flex items-center gap-3 w-full sm:w-auto">
-              <PrimaryButton type="submit" disabled={cltBlocked} className="px-8 py-4 text-xs tracking-[0.2em] uppercase">
-                Confirmar Registro
+              <PrimaryButton type="submit" disabled={cltBlocked || isSubmitting} className="px-8 py-4 text-xs tracking-[0.2em] uppercase">
+                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {isSubmitting ? "Registrando..." : "Confirmar Registro"}
               </PrimaryButton>
             </div>
+            {submitMessage && (
+              <p className="w-full text-right text-[11px] font-bold uppercase tracking-widest text-destructive" role="alert">
+                {submitMessage}
+              </p>
+            )}
           </footer>
         </form>
 

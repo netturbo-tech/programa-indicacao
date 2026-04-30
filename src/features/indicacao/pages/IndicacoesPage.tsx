@@ -52,6 +52,7 @@ export function IndicacoesPage() {
   const [tab, setTab] = useState<"indicacoes" | "contatos">("indicacoes");
 
   const isAdmin = user?.role === "admin";
+  const hasBroadAccess = user?.role === "admin" || user?.role === "aprovador";
 
   const filtered = useMemo(() => {
     return visibleIndicacoes.filter((i) => {
@@ -64,17 +65,29 @@ export function IndicacoesPage() {
 
   if (!user) return null;
 
-  const canEditAny = user.role === "admin";
   const canChangeStatus = user.role === "admin" || user.role === "aprovador";
 
   const canEditItem = (i: Indicacao) =>
-    user.role === "admin" || (user.role === "usuario" && i.criadoPorId === user.id);
+    user.role === "admin" ||
+    ((user.role === "usuario" || user.role === "usuario_ra") && i.criadoPorId === user.id);
   const canDeleteItem = (i: Indicacao) =>
-    user.role === "admin" || (user.role === "usuario" && i.criadoPorId === user.id);
+    user.role === "admin" ||
+    ((user.role === "usuario" || user.role === "usuario_ra") && i.criadoPorId === user.id);
 
   const handleExport = () => {
     const rows = [
-      ["Status", "Lead", "Empresa", "Email", "Telefone", "Produto", "Setor", "Contrato", "Criado por", "Criado em"].join(","),
+      [
+        "Status",
+        "Lead",
+        "Empresa",
+        "Email",
+        "Telefone",
+        "Produto",
+        "Setor",
+        "Contrato",
+        "Criado por",
+        "Criado em",
+      ].join(","),
       ...filtered.map((i) =>
         [
           i.status,
@@ -104,7 +117,17 @@ export function IndicacoesPage() {
 
   const handleExportContatos = () => {
     const rows = [
-      ["Nome", "Email", "CNPJ", "Razão Social", "Nome Fantasia", "Telefone Fixo", "Celular", "Criado por", "Criado em"].join(","),
+      [
+        "Nome",
+        "Email",
+        "CNPJ",
+        "Razão Social",
+        "Nome Fantasia",
+        "Telefone Fixo",
+        "Celular",
+        "Criado por",
+        "Criado em",
+      ].join(","),
       ...contatos.map((c) =>
         [
           c.nome,
@@ -143,19 +166,30 @@ export function IndicacoesPage() {
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8 border-b border-outline-variant/10">
         <div className="space-y-2">
           <h1 className="font-display text-5xl md:text-7xl font-bold tracking-tighter uppercase leading-none">
-            {user.role === "usuario" ? "Minhas" : "Todas"} <br />
-            <span className="italic font-light text-on-surface-variant">Indicações</span>
+            {isAdmin ? "Todos" : hasBroadAccess ? "Todas" : "Minhas"} <br />
+            <span className="italic font-light text-on-surface-variant">
+              {isAdmin ? "Registros" : "Indicações"}
+            </span>
           </h1>
           <p className="text-[10px] text-outline uppercase tracking-widest font-bold">
-            {filtered.length} indicações{isAdmin ? ` · ${contatos.length} contatos` : ""} no banco de dados
+            {filtered.length} indicações{isAdmin ? ` · ${contatos.length} contatos quentes` : ""} no banco
+            de dados
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <PrimaryButton variant="secondary" onClick={() => setShowFilter((v) => !v)} className="px-4 py-2 text-[10px] tracking-widest">
+          <PrimaryButton
+            variant="secondary"
+            onClick={() => setShowFilter((v) => !v)}
+            className="px-4 py-2 text-[10px] tracking-widest"
+          >
             <Filter className="h-3 w-3" /> FILTRAR
           </PrimaryButton>
-          <PrimaryButton variant="secondary" onClick={handleExport} className="px-4 py-2 text-[10px] tracking-widest">
+          <PrimaryButton
+            variant="secondary"
+            onClick={handleExport}
+            className="px-4 py-2 text-[10px] tracking-widest"
+          >
             <Download className="h-3 w-3" /> EXPORTAR
           </PrimaryButton>
         </div>
@@ -172,7 +206,7 @@ export function IndicacoesPage() {
                 : "ring-outline-variant/20 bg-surface-low text-outline hover:text-white"
             }`}
           >
-            Indicações · {filtered.length}
+            Registros · {filtered.length}
           </button>
           <button
             type="button"
@@ -183,16 +217,31 @@ export function IndicacoesPage() {
                 : "ring-outline-variant/20 bg-surface-low text-outline hover:text-white"
             }`}
           >
-            Contatos · {contatos.length}
+            Contatos Quentes · {contatos.length}
           </button>
         </div>
       )}
 
       {showFilter && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-8 bg-surface-low rounded-xl animate-in slide-in-from-top-4 duration-500">
-          <FilterSelect label="Status" value={fStatus} onChange={(v) => setFStatus(v as StatusIndicacao | "")} options={STATUSES} />
-          <FilterSelect label="Produto" value={fProduto} onChange={(v) => setFProduto(v as Produto | "")} options={PRODUTOS} />
-          <FilterSelect label="Setor" value={fSetor} onChange={(v) => setFSetor(v as Setor | "")} options={SETORES} />
+          <FilterSelect
+            label="Status"
+            value={fStatus}
+            onChange={(v) => setFStatus(v as StatusIndicacao | "")}
+            options={STATUSES}
+          />
+          <FilterSelect
+            label="Produto"
+            value={fProduto}
+            onChange={(v) => setFProduto(v as Produto | "")}
+            options={PRODUTOS}
+          />
+          <FilterSelect
+            label="Setor"
+            value={fSetor}
+            onChange={(v) => setFSetor(v as Setor | "")}
+            options={SETORES}
+          />
           <div className="flex items-end pb-1">
             <button
               type="button"
@@ -207,142 +256,185 @@ export function IndicacoesPage() {
 
       {/* Tabela de Indicações */}
       {(!isAdmin || tab === "indicacoes") && (
-      <section className="space-y-4">
-        <div className="flex items-center gap-3">
-          <span className="inline-flex items-center justify-center h-7 w-7 rounded-md bg-primary-container/15 text-primary-container">
-            <Users className="h-3.5 w-3.5" />
-          </span>
-          <h2 className="font-display text-xl uppercase tracking-[0.2em] font-black text-white">
-            Indicações
-          </h2>
-          <span className="text-[10px] font-bold uppercase tracking-widest text-outline">
-            {filtered.length} {filtered.length === 1 ? "registro" : "registros"}
-          </span>
-        </div>
+        <section className="space-y-4">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center justify-center h-7 w-7 rounded-md bg-primary-container/15 text-primary-container">
+              <Users className="h-3.5 w-3.5" />
+            </span>
+            <h2 className="font-display text-xl uppercase tracking-[0.2em] font-black text-white">
+              Indicações
+            </h2>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-outline">
+              {filtered.length} {filtered.length === 1 ? "registro" : "registros"}
+            </span>
+          </div>
 
-        <div className="overflow-hidden rounded-xl bg-surface-low shadow-2xl">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-surface-highest/50 border-b border-outline-variant/10">
-                  <th className="px-6 py-5 text-[10px] uppercase tracking-[0.2em] font-black text-outline">Status</th>
-                  <th className="px-6 py-5 text-[10px] uppercase tracking-[0.2em] font-black text-outline">Colaborador</th>
-                  <th className="px-6 py-5 text-[10px] uppercase tracking-[0.2em] font-black text-outline">Lead / Empresa</th>
-                  <th className="px-6 py-5 text-[10px] uppercase tracking-[0.2em] font-black text-outline hidden md:table-cell">Produto</th>
-                  <th className="px-6 py-5 text-[10px] uppercase tracking-[0.2em] font-black text-outline hidden lg:table-cell">Contrato</th>
-                  <th className="px-6 py-5 text-[10px] uppercase tracking-[0.2em] font-black text-outline">Datas</th>
-                  <th className="px-6 py-5 text-[10px] uppercase tracking-[0.2em] font-black text-outline text-right">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-outline-variant/5">
-                {filtered.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-6 py-20 text-center">
-                      <div className="text-outline-variant font-display text-lg uppercase tracking-widest italic">Nenhuma indicação encontrada</div>
-                    </td>
+          <div className="overflow-hidden rounded-xl bg-surface-low shadow-2xl">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-surface-highest/50 border-b border-outline-variant/10">
+                    <th className="px-6 py-5 text-[10px] uppercase tracking-[0.2em] font-black text-outline">
+                      Status
+                    </th>
+                    <th className="px-6 py-5 text-[10px] uppercase tracking-[0.2em] font-black text-outline">
+                      Colaborador
+                    </th>
+                    <th className="px-6 py-5 text-[10px] uppercase tracking-[0.2em] font-black text-outline">
+                      Lead / Empresa
+                    </th>
+                    <th className="px-6 py-5 text-[10px] uppercase tracking-[0.2em] font-black text-outline hidden md:table-cell">
+                      Produto
+                    </th>
+                    <th className="px-6 py-5 text-[10px] uppercase tracking-[0.2em] font-black text-outline hidden lg:table-cell">
+                      Contrato
+                    </th>
+                    <th className="px-6 py-5 text-[10px] uppercase tracking-[0.2em] font-black text-outline">
+                      Datas
+                    </th>
+                    <th className="px-6 py-5 text-[10px] uppercase tracking-[0.2em] font-black text-outline text-right">
+                      Ações
+                    </th>
                   </tr>
-                ) : (
-                  filtered.map((i) => (
-                    <tr key={i.id} className="group hover:bg-surface-high/50 transition-colors">
-                      <td className="px-6 py-6">
-                        {canChangeStatus ? (
-                          <select
-                            value={i.status}
-                            onChange={(e) => {
-                              updateStatus(i.id, e.target.value as StatusIndicacao);
-                              toast.success(`Status atualizado`);
-                            }}
-                            className={`cursor-pointer rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest outline-none border-0 ring-1 ring-inset ${STATUS_STYLES[i.status].bg} ${STATUS_STYLES[i.status].text} ring-current/20`}
-                          >
-                            {STATUSES.map((s) => (
-                              <option key={s} value={s} className="bg-surface-container text-white">
-                                {s}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <StatusBadge status={i.status} />
-                        )}
-                      </td>
-                      <td className="px-6 py-6">
-                        <div className="flex items-center gap-3">
-                          <Avatar name={i.criadoPorNome} size="sm" className="ring-2 ring-primary-container/20" />
-                          <span className="text-xs font-bold uppercase tracking-tight text-on-surface">{i.criadoPorNome}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-6">
-                        <div className="space-y-1">
-                          <div className="text-sm font-bold uppercase tracking-tight text-white group-hover:text-primary-container transition-colors">{i.leadNome}</div>
-                          <div className="text-[10px] font-medium text-outline uppercase tracking-wider">{i.empresa}</div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-6 hidden md:table-cell">
-                        <span className="text-xs font-medium text-on-surface-variant">{i.produto}</span>
-                      </td>
-                      <td className="px-6 py-6 hidden lg:table-cell">
-                        <span className="inline-block px-2 py-0.5 rounded bg-surface-highest text-[10px] font-black text-on-surface-variant uppercase tracking-tighter">
-                          {i.contrato}
-                        </span>
-                      </td>
-                      <td className="px-6 py-6">
-                        <div className="space-y-0.5">
-                          <div className="text-[10px] font-bold text-on-surface-variant">C: {fmtDate(i.criadoEm)}</div>
-                          <div className="text-[10px] font-medium text-outline">M: {fmtDate(i.modificadoEm)}</div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-6 text-right">
-                        <div className="relative inline-block">
-                          <button
-                            type="button"
-                            onClick={() => setOpenMenu(openMenu === i.id ? null : i.id)}
-                            className="p-2 rounded-lg text-outline hover:text-white hover:bg-surface-highest transition-all"
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                          </button>
-                          {openMenu === i.id && (
-                            <div
-                              className="absolute right-0 top-full z-20 mt-2 w-48 overflow-hidden rounded-xl bg-surface-high border border-outline-variant/20 shadow-2xl animate-in zoom-in-95 duration-200"
-                              onMouseLeave={() => setOpenMenu(null)}
-                            >
-                              {canEditItem(i) && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setEditing(i);
-                                    setOpenMenu(null);
-                                  }}
-                                  className="flex w-full items-center gap-3 px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-primary-container hover:text-on-primary-container transition-colors"
-                                >
-                                  <Pencil className="h-3.5 w-3.5" /> Editar
-                                </button>
-                              )}
-                              {canDeleteItem(i) && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (confirm("Excluir esta indicação?")) {
-                                      deleteIndicacao(i.id);
-                                      setOpenMenu(null);
-                                      toast.success("Excluído.");
-                                    }
-                                  }}
-                                  className="flex w-full items-center gap-3 px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-red-400 hover:bg-red-500 hover:text-white transition-colors"
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" /> Excluir
-                                </button>
-                              )}
-                            </div>
-                          )}
+                </thead>
+                <tbody className="divide-y divide-outline-variant/5">
+                  {filtered.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="px-6 py-20 text-center">
+                        <div className="text-outline-variant font-display text-lg uppercase tracking-widest italic">
+                          Nenhuma indicação encontrada
                         </div>
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    filtered.map((i) => (
+                      <tr key={i.id} className="group hover:bg-surface-high/50 transition-colors">
+                        <td className="px-6 py-6">
+                          {canChangeStatus ? (
+                            <select
+                              value={i.status}
+                              onChange={async (e) => {
+                                const result = await updateStatus(
+                                  i.id,
+                                  e.target.value as StatusIndicacao,
+                                );
+                                if (result.ok) toast.success(`Status atualizado`);
+                              }}
+                              className={`cursor-pointer rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest outline-none border-0 ring-1 ring-inset ${STATUS_STYLES[i.status].bg} ${STATUS_STYLES[i.status].text} ring-current/20`}
+                            >
+                              {STATUSES.map((s) => (
+                                <option
+                                  key={s}
+                                  value={s}
+                                  className="bg-surface-container text-white"
+                                >
+                                  {s}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <StatusBadge status={i.status} />
+                          )}
+                        </td>
+                        <td className="px-6 py-6">
+                          <div className="flex items-center gap-3">
+                            <Avatar
+                              name={i.criadoPorNome}
+                              size="sm"
+                              className="ring-2 ring-primary-container/20"
+                            />
+                            <span className="text-xs font-bold uppercase tracking-tight text-on-surface">
+                              {i.criadoPorNome}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-6">
+                          <div className="space-y-1">
+                            <div className="text-sm font-bold uppercase tracking-tight text-white group-hover:text-primary-container transition-colors">
+                              {i.leadNome}
+                            </div>
+                            <div className="text-[10px] font-medium text-outline uppercase tracking-wider">
+                              {i.empresa}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-6 hidden md:table-cell">
+                          <span className="text-xs font-medium text-on-surface-variant">
+                            {i.produto}
+                          </span>
+                        </td>
+                        <td className="px-6 py-6 hidden lg:table-cell">
+                          <span className="inline-block px-2 py-0.5 rounded bg-surface-highest text-[10px] font-black text-on-surface-variant uppercase tracking-tighter">
+                            {i.contrato}
+                          </span>
+                        </td>
+                        <td className="px-6 py-6">
+                          <div className="space-y-0.5">
+                            <div className="text-[10px] font-bold text-on-surface-variant">
+                              C: {fmtDate(i.criadoEm)}
+                            </div>
+                            <div className="text-[10px] font-medium text-outline">
+                              M: {fmtDate(i.modificadoEm)}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-6 text-right">
+                          {canEditItem(i) || canDeleteItem(i) ? (
+                            <div className="relative inline-block">
+                              <button
+                                type="button"
+                                onClick={() => setOpenMenu(openMenu === i.id ? null : i.id)}
+                                className="p-2 rounded-lg text-outline hover:text-white hover:bg-surface-highest transition-all"
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </button>
+                              {openMenu === i.id && (
+                                <div
+                                  className="absolute right-0 top-full z-20 mt-2 w-48 overflow-hidden rounded-xl bg-surface-high border border-outline-variant/20 shadow-2xl animate-in zoom-in-95 duration-200"
+                                  onMouseLeave={() => setOpenMenu(null)}
+                                >
+                                  {canEditItem(i) && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setEditing(i);
+                                        setOpenMenu(null);
+                                      }}
+                                      className="flex w-full items-center gap-3 px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-primary-container hover:text-on-primary-container transition-colors"
+                                    >
+                                      <Pencil className="h-3.5 w-3.5" /> Editar
+                                    </button>
+                                  )}
+                                  {canDeleteItem(i) && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (confirm("Excluir esta indicação?")) {
+                                          deleteIndicacao(i.id);
+                                          setOpenMenu(null);
+                                          toast.success("Excluído.");
+                                        }
+                                      }}
+                                      className="flex w-full items-center gap-3 px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-red-400 hover:bg-red-500 hover:text-white transition-colors"
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" /> Excluir
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs font-bold text-outline">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
       )}
 
       {/* Tabela de Contatos - apenas admin */}
@@ -374,19 +466,33 @@ export function IndicacoesPage() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-surface-highest/50 border-b border-outline-variant/10">
-                    <th className="px-6 py-5 text-[10px] uppercase tracking-[0.2em] font-black text-outline">Colaborador</th>
-                    <th className="px-6 py-5 text-[10px] uppercase tracking-[0.2em] font-black text-outline">Contato / Empresa</th>
-                    <th className="px-6 py-5 text-[10px] uppercase tracking-[0.2em] font-black text-outline hidden md:table-cell">CNPJ</th>
-                    <th className="px-6 py-5 text-[10px] uppercase tracking-[0.2em] font-black text-outline hidden lg:table-cell">Telefones</th>
-                    <th className="px-6 py-5 text-[10px] uppercase tracking-[0.2em] font-black text-outline">Datas</th>
-                    <th className="px-6 py-5 text-[10px] uppercase tracking-[0.2em] font-black text-outline text-right">Ações</th>
+                    <th className="px-6 py-5 text-[10px] uppercase tracking-[0.2em] font-black text-outline">
+                      Colaborador
+                    </th>
+                    <th className="px-6 py-5 text-[10px] uppercase tracking-[0.2em] font-black text-outline">
+                      Contato / Empresa
+                    </th>
+                    <th className="px-6 py-5 text-[10px] uppercase tracking-[0.2em] font-black text-outline hidden md:table-cell">
+                      CNPJ
+                    </th>
+                    <th className="px-6 py-5 text-[10px] uppercase tracking-[0.2em] font-black text-outline hidden lg:table-cell">
+                      Telefones
+                    </th>
+                    <th className="px-6 py-5 text-[10px] uppercase tracking-[0.2em] font-black text-outline">
+                      Datas
+                    </th>
+                    <th className="px-6 py-5 text-[10px] uppercase tracking-[0.2em] font-black text-outline text-right">
+                      Ações
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant/5">
                   {contatos.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="px-6 py-20 text-center">
-                        <div className="text-outline-variant font-display text-lg uppercase tracking-widest italic">Nenhum contato cadastrado</div>
+                        <div className="text-outline-variant font-display text-lg uppercase tracking-widest italic">
+                          Nenhum contato cadastrado
+                        </div>
                       </td>
                     </tr>
                   ) : (
@@ -394,72 +500,98 @@ export function IndicacoesPage() {
                       <tr key={c.id} className="group hover:bg-surface-high/50 transition-colors">
                         <td className="px-6 py-6">
                           <div className="flex items-center gap-3">
-                            <Avatar name={c.criadoPorNome} size="sm" className="ring-2 ring-sky-500/20" />
-                            <span className="text-xs font-bold uppercase tracking-tight text-on-surface">{c.criadoPorNome}</span>
+                            <Avatar
+                              name={c.criadoPorNome}
+                              size="sm"
+                              className="ring-2 ring-sky-500/20"
+                            />
+                            <span className="text-xs font-bold uppercase tracking-tight text-on-surface">
+                              {c.criadoPorNome}
+                            </span>
                           </div>
                         </td>
                         <td className="px-6 py-6">
                           <div className="space-y-1">
-                            <div className="text-sm font-bold uppercase tracking-tight text-white group-hover:text-sky-400 transition-colors">{c.nome}</div>
-                            <div className="text-[10px] font-medium text-outline uppercase tracking-wider">{c.nomeFantasia || c.razaoSocial || "—"}</div>
-                            <div className="text-[10px] font-medium text-outline-variant">{c.email}</div>
+                            <div className="text-sm font-bold uppercase tracking-tight text-white group-hover:text-sky-400 transition-colors">
+                              {c.nome}
+                            </div>
+                            <div className="text-[10px] font-medium text-outline uppercase tracking-wider">
+                              {c.nomeFantasia || c.razaoSocial || "—"}
+                            </div>
+                            <div className="text-[10px] font-medium text-outline-variant">
+                              {c.email}
+                            </div>
                           </div>
                         </td>
                         <td className="px-6 py-6 hidden md:table-cell">
-                          <span className="text-xs font-medium text-on-surface-variant">{c.cnpj || "—"}</span>
+                          <span className="text-xs font-medium text-on-surface-variant">
+                            {c.cnpj || "—"}
+                          </span>
                         </td>
                         <td className="px-6 py-6 hidden lg:table-cell">
                           <div className="space-y-0.5">
-                            <div className="text-[10px] font-medium text-on-surface-variant">Fixo: {c.telefoneFixo || "—"}</div>
-                            <div className="text-[10px] font-medium text-on-surface-variant">Cel: {c.celular || "—"}</div>
+                            <div className="text-[10px] font-medium text-on-surface-variant">
+                              Fixo: {c.telefoneFixo || "—"}
+                            </div>
+                            <div className="text-[10px] font-medium text-on-surface-variant">
+                              Cel: {c.celular || "—"}
+                            </div>
                           </div>
                         </td>
                         <td className="px-6 py-6">
                           <div className="space-y-0.5">
-                            <div className="text-[10px] font-bold text-on-surface-variant">C: {fmtDate(c.criadoEm)}</div>
-                            <div className="text-[10px] font-medium text-outline">M: {fmtDate(c.modificadoEm)}</div>
+                            <div className="text-[10px] font-bold text-on-surface-variant">
+                              C: {fmtDate(c.criadoEm)}
+                            </div>
+                            <div className="text-[10px] font-medium text-outline">
+                              M: {fmtDate(c.modificadoEm)}
+                            </div>
                           </div>
                         </td>
                         <td className="px-6 py-6 text-right">
-                          <div className="relative inline-block">
-                            <button
-                              type="button"
-                              onClick={() => setOpenMenu(openMenu === c.id ? null : c.id)}
-                              className="p-2 rounded-lg text-outline hover:text-white hover:bg-surface-highest transition-all"
-                            >
-                              <MoreVertical className="h-4 w-4" />
-                            </button>
-                            {openMenu === c.id && (
-                              <div
-                                className="absolute right-0 top-full z-20 mt-2 w-48 overflow-hidden rounded-xl bg-surface-high border border-outline-variant/20 shadow-2xl animate-in zoom-in-95 duration-200"
-                                onMouseLeave={() => setOpenMenu(null)}
+                          {isAdmin ? (
+                            <div className="relative inline-block">
+                              <button
+                                type="button"
+                                onClick={() => setOpenMenu(openMenu === c.id ? null : c.id)}
+                                className="p-2 rounded-lg text-outline hover:text-white hover:bg-surface-highest transition-all"
                               >
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setEditingContato(c);
-                                    setOpenMenu(null);
-                                  }}
-                                  className="flex w-full items-center gap-3 px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-primary-container hover:text-on-primary-container transition-colors"
+                                <MoreVertical className="h-4 w-4" />
+                              </button>
+                              {openMenu === c.id && (
+                                <div
+                                  className="absolute right-0 top-full z-20 mt-2 w-48 overflow-hidden rounded-xl bg-surface-high border border-outline-variant/20 shadow-2xl animate-in zoom-in-95 duration-200"
+                                  onMouseLeave={() => setOpenMenu(null)}
                                 >
-                                  <Pencil className="h-3.5 w-3.5" /> Editar
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (confirm("Excluir este contato?")) {
-                                      deleteContato(c.id);
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingContato(c);
                                       setOpenMenu(null);
-                                      toast.success("Excluído.");
-                                    }
-                                  }}
-                                  className="flex w-full items-center gap-3 px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-red-400 hover:bg-red-500 hover:text-white transition-colors"
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" /> Excluir
-                                </button>
-                              </div>
-                            )}
-                          </div>
+                                    }}
+                                    className="flex w-full items-center gap-3 px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-primary-container hover:text-on-primary-container transition-colors"
+                                  >
+                                    <Pencil className="h-3.5 w-3.5" /> Editar
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (confirm("Excluir este contato?")) {
+                                        deleteContato(c.id);
+                                        setOpenMenu(null);
+                                        toast.success("Excluído.");
+                                      }
+                                    }}
+                                    className="flex w-full items-center gap-3 px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-red-400 hover:bg-red-500 hover:text-white transition-colors"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" /> Excluir
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs font-bold text-outline">—</span>
+                          )}
                         </td>
                       </tr>
                     ))
@@ -471,27 +603,16 @@ export function IndicacoesPage() {
         </section>
       )}
 
-      {editing && canEditAny && (
+      {editing && canEditItem(editing) && (
         <EditModal
           indicacao={editing}
           onClose={() => setEditing(null)}
-          onSave={(patch) => {
-            updateIndicacao(editing.id, patch);
-            setEditing(null);
-            toast.success("Indicação atualizada.");
-          }}
-        />
-      )}
-
-      {editing && !canEditAny && (
-        <EditModal
-          indicacao={editing}
-          restricted
-          onClose={() => setEditing(null)}
-          onSave={(patch) => {
-            updateIndicacao(editing.id, patch);
-            setEditing(null);
-            toast.success("Indicação atualizada.");
+          onSave={async (patch) => {
+            const result = await updateIndicacao(editing.id, patch);
+            if (result.ok) {
+              setEditing(null);
+              toast.success("Indicação atualizada.");
+            }
           }}
         />
       )}
@@ -563,10 +684,7 @@ function EditModal({
     observacao: indicacao.observacao,
   });
   return (
-    <div
-      className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4" onClick={onClose}>
       <div
         className="w-full max-w-xl rounded-2xl border border-[#2a2a2a] bg-[#1a1a1a] p-6"
         onClick={(e) => e.stopPropagation()}
@@ -587,10 +705,26 @@ function EditModal({
           </p>
         )}
         <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <ModalField label="Lead" value={form.leadNome} onChange={(v) => setForm({ ...form, leadNome: v })} />
-          <ModalField label="Empresa" value={form.empresa} onChange={(v) => setForm({ ...form, empresa: v })} />
-          <ModalField label="Telefone" value={form.telefone} onChange={(v) => setForm({ ...form, telefone: v })} />
-          <ModalField label="Email" value={form.emailLead} onChange={(v) => setForm({ ...form, emailLead: v })} />
+          <ModalField
+            label="Lead"
+            value={form.leadNome}
+            onChange={(v) => setForm({ ...form, leadNome: v })}
+          />
+          <ModalField
+            label="Empresa"
+            value={form.empresa}
+            onChange={(v) => setForm({ ...form, empresa: v })}
+          />
+          <ModalField
+            label="Telefone"
+            value={form.telefone}
+            onChange={(v) => setForm({ ...form, telefone: v })}
+          />
+          <ModalField
+            label="Email"
+            value={form.emailLead}
+            onChange={(v) => setForm({ ...form, emailLead: v })}
+          />
           <label className="block md:col-span-2">
             <span className="mb-1.5 block text-xs font-medium text-[#AAAAAA]">Produto</span>
             <select
@@ -661,16 +795,46 @@ function EditContatoModal({
           </button>
         </div>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <ModalField label="Nome" value={form.nome} onChange={(v) => setForm({ ...form, nome: v })} />
-          <ModalField label="Email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
-          <ModalField label="CNPJ" value={form.cnpj} onChange={(v) => setForm({ ...form, cnpj: v })} />
-          <ModalField label="Telefone Fixo" value={form.telefoneFixo} onChange={(v) => setForm({ ...form, telefoneFixo: v })} />
-          <ModalField label="Celular" value={form.celular} onChange={(v) => setForm({ ...form, celular: v })} />
-          <ModalField label="Razão Social" value={form.razaoSocial} onChange={(v) => setForm({ ...form, razaoSocial: v })} />
-          <ModalField label="Nome Fantasia" value={form.nomeFantasia} onChange={(v) => setForm({ ...form, nomeFantasia: v })} />
+          <ModalField
+            label="Nome"
+            value={form.nome}
+            onChange={(v) => setForm({ ...form, nome: v })}
+          />
+          <ModalField
+            label="Email"
+            value={form.email}
+            onChange={(v) => setForm({ ...form, email: v })}
+          />
+          <ModalField
+            label="CNPJ"
+            value={form.cnpj}
+            onChange={(v) => setForm({ ...form, cnpj: v })}
+          />
+          <ModalField
+            label="Telefone Fixo"
+            value={form.telefoneFixo}
+            onChange={(v) => setForm({ ...form, telefoneFixo: v })}
+          />
+          <ModalField
+            label="Celular"
+            value={form.celular}
+            onChange={(v) => setForm({ ...form, celular: v })}
+          />
+          <ModalField
+            label="Razão Social"
+            value={form.razaoSocial}
+            onChange={(v) => setForm({ ...form, razaoSocial: v })}
+          />
+          <ModalField
+            label="Nome Fantasia"
+            value={form.nomeFantasia}
+            onChange={(v) => setForm({ ...form, nomeFantasia: v })}
+          />
         </div>
         <div className="mt-6 flex justify-end gap-2">
-          <PrimaryButton variant="secondary" onClick={onClose}>Cancelar</PrimaryButton>
+          <PrimaryButton variant="secondary" onClick={onClose}>
+            Cancelar
+          </PrimaryButton>
           <PrimaryButton onClick={() => onSave(form)}>Salvar</PrimaryButton>
         </div>
       </div>

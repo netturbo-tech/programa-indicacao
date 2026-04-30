@@ -37,12 +37,18 @@ export type StatusIndicacao =
   | "Venda perdida";
 
 export interface User {
-  id: number;
+  id: string;
+  authUserId?: string;
   name: string;
   email: string;
+  loginId?: string;
+  ra?: string;
+  cpf?: string;
+  funcao?: string;
   role: Role;
   contrato: Contrato;
   setor: Setor;
+  onboardingCompleted?: boolean;
 }
 
 export interface Indicacao {
@@ -58,7 +64,7 @@ export interface Indicacao {
   funcao: string;
   contrato: Contrato;
   observacao: string;
-  criadoPorId: number;
+  criadoPorId: string;
   criadoPorNome: string;
   criadoEm: string;
   modificadoEm: string;
@@ -83,6 +89,8 @@ export const SETORES: Setor[] = [
   "PROJETOS",
   "TI",
 ];
+
+export const CONTRATOS: Contrato[] = ["CLT", "PJ"];
 
 export const PRODUTOS: Produto[] = [
   "Conectividade",
@@ -128,7 +136,8 @@ export interface Contato {
   nomeFantasia: string;
   telefoneFixo: string;
   celular: string;
-  criadoPorId: number;
+  observacao: string;
+  criadoPorId: string;
   criadoPorNome: string;
   criadoEm: string;
   modificadoEm: string;

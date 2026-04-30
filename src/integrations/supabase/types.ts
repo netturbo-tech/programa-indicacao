@@ -26,6 +26,7 @@ export type Database = {
           modificado_por_nome: string
           nome: string
           nome_fantasia: string
+          observacao: string
           razao_social: string
           telefone_fixo: string
           updated_at: string
@@ -41,6 +42,7 @@ export type Database = {
           modificado_por_nome: string
           nome: string
           nome_fantasia?: string
+          observacao?: string
           razao_social?: string
           telefone_fixo?: string
           updated_at?: string
@@ -56,6 +58,7 @@ export type Database = {
           modificado_por_nome?: string
           nome?: string
           nome_fantasia?: string
+          observacao?: string
           razao_social?: string
           telefone_fixo?: string
           updated_at?: string
@@ -128,30 +131,45 @@ export type Database = {
       profiles: {
         Row: {
           contrato: Database["public"]["Enums"]["contrato_tipo"]
+          cpf: string | null
           created_at: string
           email: string
+          funcao: string
           id: string
+          login_identifier: string | null
           name: string
+          onboarding_completed: boolean
+          ra: string | null
           setor: Database["public"]["Enums"]["setor_tipo"]
           updated_at: string
           user_id: string
         }
         Insert: {
           contrato?: Database["public"]["Enums"]["contrato_tipo"]
+          cpf?: string | null
           created_at?: string
           email: string
+          funcao?: string
           id?: string
+          login_identifier?: string | null
           name: string
+          onboarding_completed?: boolean
+          ra?: string | null
           setor?: Database["public"]["Enums"]["setor_tipo"]
           updated_at?: string
           user_id: string
         }
         Update: {
           contrato?: Database["public"]["Enums"]["contrato_tipo"]
+          cpf?: string | null
           created_at?: string
           email?: string
+          funcao?: string
           id?: string
+          login_identifier?: string | null
           name?: string
+          onboarding_completed?: boolean
+          ra?: string | null
           setor?: Database["public"]["Enums"]["setor_tipo"]
           updated_at?: string
           user_id?: string
@@ -188,6 +206,27 @@ export type Database = {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
+        }
+        Returns: boolean
+      }
+      indicacao_update_allowed: {
+        Args: {
+          _contrato: Database["public"]["Enums"]["contrato_tipo"]
+          _criado_por_id: string
+          _criado_por_nome: string
+          _email_indicador: string
+          _email_lead: string
+          _empresa: string
+          _funcao: string
+          _id: string
+          _lead_nome: string
+          _modificado_por_nome: string
+          _observacao: string
+          _produto: Database["public"]["Enums"]["produto_tipo"]
+          _recompensa_paga: boolean
+          _setor: Database["public"]["Enums"]["setor_tipo"]
+          _status: Database["public"]["Enums"]["status_indicacao"]
+          _telefone: string
         }
         Returns: boolean
       }

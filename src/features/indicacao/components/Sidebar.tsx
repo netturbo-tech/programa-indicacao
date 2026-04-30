@@ -9,6 +9,8 @@ import {
   X,
   UserPlus,
   Contact,
+  UsersRound,
+  RefreshCw,
 } from "lucide-react";
 import { useApp } from "../AppContext";
 import { Logo } from "./Logo";
@@ -23,10 +25,11 @@ const ROLE_LABEL: Record<string, string> = {
 };
 
 export function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle?: () => void }) {
-  const { user, logout } = useApp();
+  const { user, logout, refreshData } = useApp();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -40,20 +43,47 @@ export function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle
     navigate({ to: "/" });
   };
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refreshData();
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const NAV =
-    user.role === "usuario_ra"
+    user.role === "aprovador"
       ? ([
-          { to: "/app/nova", label: "Nova Indicação", Icon: PlusCircle },
           { to: "/app/indicacoes", label: "Indicações", Icon: ListChecks },
-          { to: "/app/novo-contato", label: "Novo Contato", Icon: UserPlus },
-          { to: "/app/contatos", label: "Contatos", Icon: Contact },
+          { to: "/app/contatos", label: "Contatos Quentes", Icon: Contact },
           { to: "/app/analytics", label: "Analytics", Icon: BarChart3 },
         ] as const)
-      : ([
-          { to: "/app/nova", label: "Nova Indicação", Icon: PlusCircle },
-          { to: "/app/indicacoes", label: "Indicações", Icon: ListChecks },
-          { to: "/app/analytics", label: "Analytics", Icon: BarChart3 },
-        ] as const);
+      : user.role === "admin"
+        ? ([
+            { to: "/app/nova", label: "Nova Indicação", Icon: PlusCircle },
+            { to: "/app/novo-contato", label: "Novo Contato Quente", Icon: UserPlus },
+            { to: "/app/indicacoes", label: "Registros", Icon: ListChecks },
+            { to: "/app/analytics", label: "Analytics", Icon: BarChart3 },
+          ] as const)
+        : user.role === "usuario_ra"
+          ? ([
+              { to: "/app/nova", label: "Nova Indicação", Icon: PlusCircle },
+              { to: "/app/indicacoes", label: "Indicações", Icon: ListChecks },
+              { to: "/app/novo-contato", label: "Novo Contato Quente", Icon: UserPlus },
+              { to: "/app/contatos", label: "Contatos Quentes", Icon: Contact },
+              { to: "/app/analytics", label: "Analytics", Icon: BarChart3 },
+            ] as const)
+          : ([
+              { to: "/app/nova", label: "Nova Indicação", Icon: PlusCircle },
+              { to: "/app/indicacoes", label: "Indicações", Icon: ListChecks },
+              { to: "/app/analytics", label: "Analytics", Icon: BarChart3 },
+            ] as const);
+
+  const adminNav =
+    user.role === "admin"
+      ? ([{ to: "/app/gestao-usuarios", label: "Gestão de Usuários", Icon: UsersRound }] as const)
+      : [];
 
   return (
     <>
@@ -83,7 +113,9 @@ export function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle
           font-body shadow-[1px_0_0_0_rgba(255,255,255,0.05)]
         `}
       >
-        <div className={`flex items-center ${collapsed ? "justify-center px-2 py-8" : "justify-between px-8 py-8"}`}>
+        <div
+          className={`flex items-center ${collapsed ? "justify-center px-2 py-8" : "justify-between px-8 py-8"}`}
+        >
           {!collapsed && <Logo />}
           <button
             type="button"
@@ -100,12 +132,22 @@ export function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle
           </button>
         </div>
 
-        <div className={`flex items-center gap-4 py-6 mb-4 ${collapsed ? "justify-center px-2" : "px-8"}`}>
-          <Avatar name={user.name} size={collapsed ? "sm" : "md"} className="ring-2 ring-primary-container/20" />
+        <div
+          className={`flex items-center gap-4 py-6 mb-4 ${collapsed ? "justify-center px-2" : "px-8"}`}
+        >
+          <Avatar
+            name={user.name}
+            size={collapsed ? "sm" : "md"}
+            className="ring-2 ring-primary-container/20"
+          />
           {!collapsed && (
             <div className="min-w-0">
-              <div className="truncate text-sm font-bold text-white uppercase tracking-tight">{user.name}</div>
-              <div className="truncate text-[10px] font-black uppercase tracking-widest text-primary-container/70">{ROLE_LABEL[user.role]}</div>
+              <div className="truncate text-sm font-bold text-white uppercase tracking-tight">
+                {user.name}
+              </div>
+              <div className="truncate text-[10px] font-black uppercase tracking-widest text-primary-container/70">
+                {ROLE_LABEL[user.role]}
+              </div>
             </div>
           )}
         </div>
@@ -126,21 +168,68 @@ export function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle
                     : "text-outline hover:bg-surface-high hover:text-white"
                 }`}
               >
-                <Icon className={`h-4 w-4 shrink-0 transition-transform ${active ? "scale-110" : ""}`} />
+                <Icon
+                  className={`h-4 w-4 shrink-0 transition-transform ${active ? "scale-110" : ""}`}
+                />
                 {!collapsed && <span className="font-display">{label}</span>}
               </Link>
             );
           })}
+          {adminNav.map(({ to, label, Icon }) => {
+            const active = location.pathname.startsWith(to);
+            return (
+              <Link
+                key={to}
+                to={to}
+                title={collapsed ? label : undefined}
+                className={`flex items-center gap-4 rounded-xl px-4 py-3 text-[11px] font-black uppercase tracking-[0.15em] transition-all duration-200 ${
+                  collapsed ? "justify-center" : ""
+                } ${
+                  active
+                    ? "bg-primary-container text-on-primary-container shadow-[0_10px_20px_rgba(202,253,0,0.2)]"
+                    : "text-outline hover:bg-surface-high hover:text-white"
+                }`}
+              >
+                <Icon
+                  className={`h-4 w-4 shrink-0 transition-transform ${active ? "scale-110" : ""}`}
+                />
+                {!collapsed && <span className="font-display">{label}</span>}
+              </Link>
+            );
+          })}
+          {(() => {
+            const active = location.pathname.startsWith("/app/configuracoes");
+            return (
+              <Link
+                to="/app/configuracoes"
+                title={collapsed ? "Configurações" : undefined}
+                className={`flex items-center gap-4 rounded-xl px-4 py-3 text-[11px] font-black uppercase tracking-[0.15em] transition-all duration-200 ${
+                  collapsed ? "justify-center" : ""
+                } ${
+                  active
+                    ? "bg-primary-container text-on-primary-container shadow-[0_10px_20px_rgba(202,253,0,0.2)]"
+                    : "text-outline hover:bg-surface-high hover:text-white"
+                }`}
+              >
+                <Settings
+                  className={`h-4 w-4 shrink-0 transition-transform ${active ? "scale-110" : ""}`}
+                />
+                {!collapsed && <span className="font-display">Configurações</span>}
+              </Link>
+            );
+          })()}
         </nav>
 
         <div className="p-4 space-y-2 mt-auto border-t border-outline-variant/5">
           <button
             type="button"
-            title={collapsed ? "Configurações" : undefined}
-            className={`flex w-full items-center gap-4 rounded-xl px-4 py-3 text-[11px] font-black uppercase tracking-[0.15em] text-outline hover:bg-surface-high hover:text-white transition-all ${collapsed ? "justify-center" : ""}`}
+            onClick={handleRefresh}
+            disabled={refreshing}
+            title={collapsed ? "Atualizar" : undefined}
+            className={`flex w-full items-center gap-4 rounded-xl px-4 py-3 text-[11px] font-black uppercase tracking-[0.15em] text-outline hover:bg-surface-high hover:text-white transition-all disabled:opacity-50 ${collapsed ? "justify-center" : ""}`}
           >
-            <Settings className="h-4 w-4 shrink-0" />
-            {!collapsed && <span className="font-display">Configurações</span>}
+            <RefreshCw className={`h-4 w-4 shrink-0 ${refreshing ? "animate-spin" : ""}`} />
+            {!collapsed && <span className="font-display">Atualizar</span>}
           </button>
           <button
             type="button"

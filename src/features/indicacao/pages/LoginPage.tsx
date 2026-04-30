@@ -1,42 +1,143 @@
 import { useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
-import { ArrowRight } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { ArrowRight, Eye, EyeOff } from "lucide-react";
 import { useApp } from "../AppContext";
 import { PrimaryButton } from "../components/PrimaryButton";
-import { Avatar } from "../components/Avatar";
 import { BackgroundGradientAnimation } from "@/components/ui/background-gradient-animation";
+import { supabase } from "@/integrations/supabase/client";
+import { authEmailForIdentifier, normalizeIdentifier } from "../authIdentifiers";
+import { resolveLoginIdentifier } from "../authActions";
 
-const ROLE_LABEL: Record<string, string> = {
-  admin: "Administrador",
-  aprovador: "Aprovador",
-  usuario: "Usuário",
-  usuario_ra: "Usuário RA",
-};
+const LAST_LOGIN_IDENTIFIER_KEY = "indicacao:last-login-identifier";
+const LOGIN_TIMEOUT_MS = 15000;
+
+function withTimeout<T>(promise: Promise<T>, message: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => window.setTimeout(() => reject(new Error(message)), LOGIN_TIMEOUT_MS)),
+  ]);
+}
+
+function loginErrorMessage(message?: string) {
+  const normalized = (message || "").toLowerCase();
+
+  if (normalized.includes("tempo limite") || normalized.includes("timeout")) {
+    return "O Supabase demorou para responder. Verifique a conexão e tente novamente.";
+  }
+
+  if (normalized.includes("invalid login credentials")) {
+    return "E-mail, RA, CPF ou senha inválidos.";
+  }
+
+  if (normalized.includes("email not confirmed")) {
+    return "Seu e-mail ainda não foi confirmado.";
+  }
+
+  if (normalized.includes("too many requests") || normalized.includes("rate limit")) {
+    return "Muitas tentativas de login. Aguarde alguns minutos e tente novamente.";
+  }
+
+  if (!message) {
+    return "Não foi possível acessar. Tente novamente.";
+  }
+
+  return `Erro ao acessar: ${message}`;
+}
 
 export function LoginPage() {
-  const { users, login } = useApp();
+  const { registerUser } = useApp();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() =>
+    typeof window === "undefined"
+      ? ""
+      : window.localStorage.getItem(LAST_LOGIN_IDENTIFIER_KEY) || "",
+  );
   const [senha, setSenha] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleQuickLogin = (id: number) => {
-    login(id);
-    navigate({ to: "/app/nova" });
-  };
-
-  const handleEmailLogin = (e: React.FormEvent) => {
+  const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const found = users.find((u) => u.email.toLowerCase() === email.toLowerCase().trim());
-    if (found) {
-      login(found.id);
+    setError("");
+    setIsSubmitting(true);
+
+    try {
+      const normalized = normalizeIdentifier(email);
+      let loginEmail: string;
+
+      if (normalized.type === "email") {
+        loginEmail = normalized.value;
+      } else {
+        // CPF/RA: busca o e-mail real cadastrado no perfil.
+        const resolved = await withTimeout(
+          resolveLoginIdentifier({ data: { identifier: email } }),
+          "Tempo limite ao localizar cadastro.",
+        );
+        if (!resolved.ok || !resolved.email) {
+          setError(resolved.error || "Cadastro não encontrado para este CPF/RA.");
+          return;
+        }
+        loginEmail = resolved.email;
+      }
+
+      let { data: signInData, error: signInError } = await withTimeout(
+        supabase.auth.signInWithPassword({
+          email: loginEmail,
+          password: senha,
+        }),
+        "Tempo limite ao conectar com o Supabase.",
+      );
+
+      // Fallback para contas antigas criadas com e-mail sintético de CPF/RA.
+      if (signInError && normalized.type !== "email") {
+        const synthetic = authEmailForIdentifier(email);
+        if (synthetic !== loginEmail) {
+          const retry = await withTimeout(
+            supabase.auth.signInWithPassword({
+              email: synthetic,
+              password: senha,
+            }),
+            "Tempo limite ao conectar com o Supabase.",
+          );
+          signInData = retry.data;
+          signInError = retry.error;
+        }
+      }
+
+      if (signInError) {
+        setError(loginErrorMessage(signInError.message));
+        return;
+      }
+
+      const result = await withTimeout(
+        registerUser({
+          identifier: email,
+          password: senha,
+          authUserId: signInData.user?.id,
+        }),
+        "Tempo limite ao carregar o perfil do usuário.",
+      );
+
+      if (!result.ok) {
+        setError(result.error || "Não foi possível carregar o perfil.");
+        return;
+      }
+
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(LAST_LOGIN_IDENTIFIER_KEY, email.trim());
+      }
       navigate({ to: "/app/nova" });
-    } else {
-      alert("Usuário não encontrado. Use um dos acessos rápidos.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Erro inesperado no login.";
+      setError(loginErrorMessage(message));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <BackgroundGradientAnimation 
+    <BackgroundGradientAnimation
       containerClassName="h-screen w-full"
       firstColor="14, 14, 14"
       secondColor="10, 10, 10"
@@ -47,37 +148,50 @@ export function LoginPage() {
     >
       <div className="fixed inset-0 z-10 flex items-center justify-center p-4 selection:bg-primary-container selection:text-on-primary-container font-body overflow-y-auto">
         {/* Main Editorial Card */}
-        <main className="relative w-full max-w-4xl grid lg:grid-cols-12 gap-0 overflow-hidden rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.8)] bg-surface/20 backdrop-blur-3xl border border-outline-variant/10 my-auto">
-          
+        <main className="relative my-auto grid w-full max-w-[58rem] min-h-[480px] overflow-hidden rounded-2xl border border-outline-variant/10 bg-surface/20 shadow-[0_24px_64px_rgba(0,0,0,0.8)] backdrop-blur-3xl lg:grid-cols-12">
           {/* Mancha Verde / Green Glow at the division */}
           <div className="absolute top-0 right-[41.666%] w-px h-full bg-gradient-to-b from-transparent via-primary-container/40 to-transparent z-20 hidden lg:block shadow-[0_0_40px_rgba(202,253,0,0.3)]" />
 
           {/* Left Side: Marketing Content */}
-          <div className="hidden lg:flex lg:col-span-7 flex-col justify-between p-12 lg:p-14 relative overflow-hidden">
-            <div className="z-10 flex items-center gap-4">
-              <img src="/logo.png" alt="Logo" className="h-14 w-14 object-contain shadow-[0_0_30px_rgba(202,253,0,0.2)] rounded-xl mix-blend-screen brightness-125" />
+          <div className="relative hidden flex-col justify-between overflow-hidden p-9 lg:col-span-7 lg:flex xl:p-10">
+            <div className="z-10 flex items-center gap-3">
+              <img
+                src="/logo.png"
+                alt="Logo"
+                className="h-10 w-10 object-contain shadow-[0_0_30px_rgba(202,253,0,0.2)] rounded-xl mix-blend-screen brightness-125"
+              />
               <div className="flex flex-col">
-                <span className="text-primary-container font-display text-3xl font-bold italic tracking-tighter uppercase leading-none">Net Turbo</span>
-                <span className="text-[10px] uppercase tracking-[0.4em] text-white/50 font-black mt-1">Programa de Indicações</span>
+                <span className="text-primary-container font-display text-xl font-bold italic uppercase leading-none">
+                  Net Turbo
+                </span>
+                <span className="mt-1 text-[9px] font-black uppercase tracking-[0.35em] text-white/50">
+                  Programa de Indicações
+                </span>
               </div>
             </div>
 
-            <div className="z-10 space-y-6">
-              <h1 className="font-display text-4xl lg:text-5xl font-bold tracking-tight leading-[0.95] uppercase text-white animate-in slide-in-from-left duration-700">
+            <div className="z-10 max-w-[25rem] space-y-6">
+              <h1 className="font-display text-[2.45rem] font-bold uppercase leading-[0.95] tracking-tight text-white animate-in slide-in-from-left duration-700 xl:text-[2.85rem]">
                 Indique. Ganhe. <br />
-                <span className="text-primary-container italic font-light lowercase">Faça o time crescer.</span>
+                <span className="text-primary-container italic font-light lowercase">
+                  Faça o time crescer.
+                </span>
               </h1>
-              
-              <div className="space-y-4 max-w-sm">
+
+              <div className="max-w-sm space-y-3">
                 <div className="space-y-1">
-                  <h2 className="font-display text-xl font-bold uppercase tracking-tight text-white">Como Funciona?</h2>
+                  <h2 className="font-display text-sm font-bold uppercase tracking-tight text-white">
+                    Como Funciona?
+                  </h2>
                   <div className="h-[2px] w-10 bg-primary-container" />
                 </div>
-                <p className="text-on-surface-variant text-sm leading-relaxed font-light">
-                  Para realizar uma indicação, o colaborador deverá registrar o potencial cliente através do canal oficial. E após venda e confirmação da implantação do contrato os créditos do programa serão liberados.
+                <p className="text-xs leading-5 text-on-surface-variant">
+                  Para realizar uma indicação, o colaborador deverá registrar o potencial cliente
+                  através do canal oficial. E após venda e confirmação da implantação do contrato os
+                  créditos do programa serão liberados.
                 </p>
-                <div className="pt-2">
-                  <span className="text-primary-container font-display text-lg font-bold uppercase tracking-tighter">
+                <div className="pt-1">
+                  <span className="text-primary-container font-display text-sm font-bold uppercase tracking-tight">
                     R$ 200 em créditos por venda realizada
                   </span>
                 </div>
@@ -88,62 +202,77 @@ export function LoginPage() {
 
             {/* Kinetic Texture Overlay */}
             <div className="absolute top-0 right-0 w-full h-full opacity-[0.04] pointer-events-none">
-              <div className="absolute inset-0" style={{ backgroundImage: "radial-gradient(circle at 1.5px 1.5px, #cafd00 1px, transparent 0)", backgroundSize: "40px 40px" }}></div>
+              <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage:
+                    "radial-gradient(circle at 1.5px 1.5px, #cafd00 1px, transparent 0)",
+                  backgroundSize: "40px 40px",
+                }}
+              ></div>
             </div>
           </div>
 
-          {/* Right Side: Login Form & Quick Access */}
-          <div className="lg:col-span-5 bg-surface-low p-6 lg:p-10 flex flex-col justify-center border-l border-outline-variant/10 relative">
-            <header className="mb-8">
-              <h2 className="font-display text-2xl lg:text-3xl font-bold tracking-tight mb-2 uppercase text-white leading-none">Indique um cliente!</h2>
-              <p className="text-on-surface-variant text-[10px] uppercase tracking-[0.2em] font-black mt-3">Identifique-se para continuar.</p>
+          {/* Right Side: Login Form */}
+          <div className="relative flex flex-col justify-center border-l border-outline-variant/10 bg-surface-low p-6 sm:p-8 lg:col-span-5 lg:p-9 xl:p-10">
+            <header className="mb-7">
+              <h2 className="mb-2 font-display text-xl font-bold uppercase leading-none tracking-tight text-white lg:text-2xl">
+                Indique um cliente!
+              </h2>
+              <p className="mt-3 text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant">
+                Identifique-se para continuar.
+              </p>
             </header>
 
-            <form onSubmit={handleEmailLogin} className="space-y-6">
+            <form onSubmit={handleEmailLogin} className="space-y-5">
               <Field
-                label="Seu E-mail"
-                type="email"
+                label="Seu E-mail, RA ou CPF"
+                type="text"
                 value={email}
-                onChange={(v) => setEmail(v)}
-                placeholder="nome@empresa.com.br"
+                onChange={(v) => {
+                  setEmail(v);
+                  setError("");
+                }}
+                placeholder="nome@empresa.com.br, RA ou CPF"
               />
               <Field
                 label="Sua Senha"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={senha}
-                onChange={(v) => setSenha(v)}
+                onChange={(v) => {
+                  setSenha(v);
+                  setError("");
+                }}
                 placeholder="••••••••"
                 showForgot
+                showPasswordToggle
+                isPasswordVisible={showPassword}
+                onTogglePassword={() => setShowPassword((current) => !current)}
               />
+              {error && <p className="text-xs font-bold text-destructive">{error}</p>}
+
               <div className="pt-2">
-                <PrimaryButton type="submit" className="w-full py-5 text-[10px] tracking-[0.2em] uppercase shadow-[0_15px_30px_rgba(202,253,0,0.1)]">
-                  ENTRAR NO DASHBOARD
+                <PrimaryButton
+                  disabled={isSubmitting}
+                  type="submit"
+                  className="w-full py-4 text-[9px] tracking-[0.22em] uppercase shadow-[0_15px_30px_rgba(202,253,0,0.1)]"
+                >
+                  {isSubmitting ? "ENTRANDO..." : "ENTRAR NO DASHBOARD"}
                   <ArrowRight className="h-3 w-3" />
                 </PrimaryButton>
               </div>
             </form>
 
-            <div className="my-6 flex items-center gap-3">
-              <div className="h-px flex-1 bg-outline-variant/10" />
-              <span className="text-[9px] uppercase tracking-[0.2em] text-outline font-black">Acesso Rápido</span>
-              <div className="h-px flex-1 bg-outline-variant/10" />
-            </div>
-
-            <div className="grid grid-cols-1 gap-2">
-              {users.map((u) => (
-                <button
-                  key={u.id}
-                  type="button"
-                  onClick={() => handleQuickLogin(u.id)}
-                  className="group flex w-full items-center gap-3 rounded-xl border border-outline-variant/5 bg-surface-high/30 px-3 py-2 text-left transition-all hover:border-primary-container/30 hover:bg-surface-high/60 hover:translate-x-1"
-                >
-                  <Avatar name={u.name} size="xs" className="ring-2 ring-primary-container/10 group-hover:ring-primary-container/40" />
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-[10px] font-bold text-white group-hover:text-primary-container transition-colors uppercase tracking-tight">{u.name}</div>
-                    <div className="truncate text-[8px] text-outline font-black uppercase tracking-widest">{ROLE_LABEL[u.role]}</div>
-                  </div>
-                </button>
-              ))}
+            <div className="mt-5 rounded-xl border border-outline-variant/10 bg-surface-high/20 p-4 text-center">
+              <p className="text-[9px] uppercase tracking-[0.18em] text-on-surface-variant font-black">
+                Ainda não tem acesso?
+              </p>
+              <Link
+                to="/cadastro"
+                className="mt-2 inline-flex text-[10px] font-bold uppercase tracking-[0.18em] text-primary-container transition-colors hover:text-on-surface"
+              >
+                Cadastrar nova conta
+              </Link>
             </div>
           </div>
         </main>
@@ -159,6 +288,9 @@ function Field({
   onChange,
   placeholder,
   showForgot = false,
+  showPasswordToggle = false,
+  isPasswordVisible = false,
+  onTogglePassword,
 }: {
   label: string;
   type: string;
@@ -166,26 +298,44 @@ function Field({
   onChange: (v: string) => void;
   placeholder?: string;
   showForgot?: boolean;
+  showPasswordToggle?: boolean;
+  isPasswordVisible?: boolean;
+  onTogglePassword?: () => void;
 }) {
   return (
     <div className="group relative">
       <div className="flex justify-between items-end mb-1">
-        <label className="block text-[10px] uppercase tracking-[0.2em] text-on-surface-variant font-bold group-focus-within:text-primary-container transition-colors">
+        <label className="block text-[9px] uppercase tracking-[0.2em] text-on-surface-variant font-bold group-focus-within:text-primary-container transition-colors">
           {label}
         </label>
         {showForgot && (
-          <a className="text-[10px] uppercase tracking-wider text-outline hover:text-primary-container transition-colors font-bold" href="#">
+          <a
+            className="text-[9px] uppercase tracking-wider text-outline hover:text-primary-container transition-colors font-bold"
+            href="#"
+          >
             Esqueceu?
           </a>
         )}
       </div>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full bg-transparent border-0 border-b border-outline-variant/30 py-3 px-0 text-on-surface placeholder:text-outline focus:ring-0 focus:border-primary-container transition-all text-base font-medium"
-      />
+      <div className="relative">
+        <input
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full bg-transparent border-0 border-b border-outline-variant/30 py-2.5 px-0 pr-10 text-sm font-medium text-on-surface placeholder:text-outline focus:ring-0 focus:border-primary-container transition-all"
+        />
+        {showPasswordToggle && onTogglePassword && (
+          <button
+            type="button"
+            onClick={onTogglePassword}
+            className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-outline transition-colors hover:text-primary-container focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary-container"
+            aria-label={isPasswordVisible ? "Ocultar senha" : "Mostrar senha"}
+          >
+            {isPasswordVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
