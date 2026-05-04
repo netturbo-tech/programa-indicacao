@@ -398,15 +398,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     async (updates: Partial<User>) => {
       if (!user) return { ok: false, error: "Usuário não autenticado." };
 
+      const sanitizedUpdates = Object.fromEntries(
+        Object.entries(updates).filter(([, value]) => value !== undefined),
+      ) as Partial<User>;
+
       const updatedUser: User = {
         ...user,
-        ...updates,
+        ...sanitizedUpdates,
         onboardingCompleted: true,
       };
 
       // Se o usuário forneceu um novo e-mail real (ex.: Usuário RA cadastrado
       // sem e-mail), atualiza também o e-mail de autenticação no Supabase Auth.
-      const newEmail = (updates as { email?: string }).email?.trim();
+      const newEmail = (sanitizedUpdates as { email?: string }).email?.trim();
       const currentEmail = user.email?.trim();
       if (newEmail && newEmail.toLowerCase() !== currentEmail?.toLowerCase()) {
         const { data: result, error: fnError } = await supabase.functions.invoke(
