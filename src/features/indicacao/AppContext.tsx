@@ -19,7 +19,6 @@ import type {
 } from "./types";
 import { LIMITE_CLT_MES, VALOR_RECOMPENSA } from "./types";
 import { authEmailForIdentifier } from "./authIdentifiers";
-import { replaceAuthEmail } from "./authActions";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import type { Session } from "@supabase/supabase-js";
@@ -410,11 +409,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const newEmail = (updates as { email?: string }).email?.trim();
       const currentEmail = user.email?.trim();
       if (newEmail && newEmail.toLowerCase() !== currentEmail?.toLowerCase()) {
-        const result = await replaceAuthEmail({
-          data: { userId: user.id, newEmail: newEmail.toLowerCase() },
-        });
-        if (!result.ok) {
-          return { ok: false, error: result.error };
+        const { data: result, error: fnError } = await supabase.functions.invoke(
+          "replace-auth-email",
+          { body: { newEmail: newEmail.toLowerCase() } },
+        );
+        if (fnError || !result?.ok) {
+          return {
+            ok: false,
+            error: result?.error || fnError?.message || "Erro ao atualizar e-mail.",
+          };
         }
         updatedUser.email = result.email ?? newEmail.toLowerCase();
         updatedUser.loginId = updatedUser.email;
