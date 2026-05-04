@@ -1,1 +1,4 @@
 project_id = "ubcnmvmkymjoppawfzhv"
+
+[functions.replace-auth-email]
+verify_jwt = true
