@@ -412,21 +412,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // sem e-mail), atualiza também o e-mail de autenticação no Supabase Auth.
       const newEmail = (sanitizedUpdates as { email?: string }).email?.trim();
       const currentEmail = user.email?.trim();
-      if (newEmail && newEmail.toLowerCase() !== currentEmail?.toLowerCase()) {
-        const { data: result, error: fnError } = await supabase.functions.invoke(
-          "replace-auth-email",
-          { body: { newEmail: newEmail.toLowerCase() } },
-        );
-        if (fnError || !result?.ok) {
-          return {
-            ok: false,
-            error: result?.error || fnError?.message || "Erro ao atualizar e-mail.",
-          };
-        }
-        updatedUser.email = result.email ?? newEmail.toLowerCase();
+      const needsAuthEmailUpdate =
+        !!newEmail && newEmail.toLowerCase() !== currentEmail?.toLowerCase();
+      if (needsAuthEmailUpdate) {
+        updatedUser.email = newEmail!.toLowerCase();
         updatedUser.loginId = updatedUser.email;
-        // Refresh session so the JWT carries the new email immediately.
-        await supabase.auth.refreshSession();
       }
 
       if (supabase) {
@@ -447,6 +437,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .from("profiles")
           .upsert(payload, { onConflict: "user_id" });
         if (error) return { ok: false, error: `Erro no banco de dados: ${error.message}` };
+      }
+
+      if (needsAuthEmailUpdate) {
+        const { data: result, error: fnError } = await supabase.functions.invoke(
+          "replace-auth-email",
+          { body: { newEmail: updatedUser.email } },
+        );
+        if (fnError || !result?.ok) {
+          return {
+            ok: false,
+            error: result?.error || fnError?.message || "Erro ao atualizar e-mail.",
+          };
+        }
+        updatedUser.email = result.email ?? updatedUser.email;
+        updatedUser.loginId = updatedUser.email;
+        await supabase.auth.refreshSession();
       }
 
       setUsers((prev) => prev.map((u) => (u.id === user.id ? updatedUser : u)));
