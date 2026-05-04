@@ -20,9 +20,11 @@ import { PrimaryButton } from "../components/PrimaryButton";
 export function OnboardingPage() {
   const { user, updateProfile } = useApp();
   const [loading, setLoading] = useState(false);
-  const isRaUser = user?.role === "usuario_ra";
-  const hasSyntheticEmail = !!user?.email && /@(ra|cpf)\.ntt-indicacoes\.local$/i.test(user.email);
-  const requiresEmail = isRaUser && hasSyntheticEmail;
+  const currentEmail = user?.email?.trim() || "";
+  const hasSyntheticEmail = !!currentEmail && /@(ra|cpf)\.ntt-indicacoes\.local$/i.test(currentEmail);
+  const hasRealEmail = !!currentEmail && !hasSyntheticEmail;
+  // Pede e-mail sempre que o cadastro não tiver um e-mail real (RA, CPF ou conta sem e-mail).
+  const requiresEmail = !hasRealEmail;
   const [form, setForm] = useState({
     name: user?.name || "",
     loginId: user?.loginId || user?.email || "",
