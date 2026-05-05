@@ -104,28 +104,35 @@ export function PerfilPage() {
   useEffect(() => {
     if (!isAprovador) return;
     setLoadingUsers(true);
-    supabase
-      .from("profiles")
-      .select("user_id, name, email, setor, contrato, funcao, ra, cpf, role")
-      .order("name", { ascending: true })
-      .then(({ data }) => {
-        if (data) {
-          setAllSearchableUsers(
-            data.map((p) => ({
-              userId: p.user_id,
-              name: p.name || "",
-              email: p.email || "",
-              setor: p.setor || "",
-              contrato: p.contrato || "",
-              funcao: p.funcao || "",
-              ra: p.ra || "",
-              cpf: p.cpf || "",
-              role: p.role || "usuario",
-            }))
-          );
-        }
-        setLoadingUsers(false);
-      });
+    
+    Promise.all([
+      supabase
+        .from("profiles")
+        .select("user_id, name, email, setor, contrato, funcao, ra, cpf")
+        .order("name", { ascending: true }),
+      supabase
+        .from("user_roles")
+        .select("user_id, role")
+    ]).then(([profilesRes, rolesRes]) => {
+      if (profilesRes.data && rolesRes.data) {
+        const rolesMap = new Map(rolesRes.data.map(r => [r.user_id, r.role]));
+        
+        setAllSearchableUsers(
+          profilesRes.data.map((p) => ({
+            userId: p.user_id,
+            name: p.name || "",
+            email: p.email || "",
+            setor: p.setor || "",
+            contrato: p.contrato || "",
+            funcao: p.funcao || "",
+            ra: p.ra || "",
+            cpf: p.cpf || "",
+            role: rolesMap.get(p.user_id) || "usuario",
+          }))
+        );
+      }
+      setLoadingUsers(false);
+    });
   }, [isAprovador]);
 
   // Filter users based on search query
