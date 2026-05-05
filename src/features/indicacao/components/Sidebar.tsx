@@ -98,7 +98,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle
       { to: "/app/analytics", label: "Analytics", Icon: BarChart3 },
     ];
     if (user.role === "admin") {
-      sistema.push({ to: "/app/configuracoes", label: "Configurações", Icon: Settings });
+      sistema.push({ to: "/app/configuracoes", label: "Anúncios", Icon: Settings });
     }
     sections.push({ title: "Sistema", items: sistema });
 
