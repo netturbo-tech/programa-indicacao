@@ -323,7 +323,7 @@ function Field({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full bg-transparent border-0 border-b border-outline-variant/30 py-2.5 px-0 pr-10 text-sm font-medium text-on-surface placeholder:text-outline focus:ring-0 focus:border-primary-container transition-all"
+          className="w-full bg-transparent border-0 border-b border-outline-variant/30 py-2.5 px-0 pr-10 text-sm font-medium text-on-surface placeholder:text-outline focus:ring-0 focus:outline-none focus:border-primary-container transition-all"
         />
         {showPasswordToggle && onTogglePassword && (
           <button
