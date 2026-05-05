@@ -179,18 +179,18 @@ export function AnalyticsPage() {
               <li className="text-sm text-[#666]">Sem dados</li>
             )}
             {topIndicadores.map((u, idx) => (
-              <li key={u.name} className="flex items-center gap-3">
-                <div className="grid h-6 w-6 place-items-center rounded-md bg-[#2a2a2a] text-[11px] font-bold text-white">
+              <li key={u.name} className="flex items-center gap-2 sm:gap-3">
+                <div className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-[#2a2a2a] text-[10px] sm:text-[11px] font-bold text-white">
                   {idx + 1}
                 </div>
-                <Avatar name={u.name} size="sm" src={getAvatar(u.id)} />
+                <Avatar name={u.name} size="sm" src={getAvatar(u.id)} className="shrink-0" />
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-semibold text-white">{u.name}</div>
-                  <div className="text-[11px] text-[#AAAAAA]">
-                    {u.convertidos} convertidas • {u.total} indicações
+                  <div className="truncate text-xs sm:text-sm font-semibold text-white">{u.name}</div>
+                  <div className="text-[10px] sm:text-[11px] text-[#AAAAAA] truncate">
+                    {u.convertidos} conv. • {u.total} ind.
                   </div>
                 </div>
-                <div className="text-sm font-bold text-[#CCFF00]">
+                <div className="shrink-0 text-xs sm:text-sm font-bold text-[#CCFF00]">
                   R$ {(u.convertidos * VALOR_RECOMPENSA).toLocaleString("pt-BR")}
                 </div>
               </li>

@@ -131,7 +131,7 @@ export function AnnouncementPopup() {
         </div>
 
         {config.midia && (
-          <div className="w-full h-[280px] bg-black">
+          <div className="w-full h-[200px] md:h-[280px] bg-black">
             {config.midia.tipo === "imagem" ? (
               <img src={config.midia.base64} className="w-full h-full object-cover" alt="Anúncio" />
             ) : (
@@ -140,11 +140,11 @@ export function AnnouncementPopup() {
           </div>
         )}
 
-        <div className={`p-8 ${!config.midia ? "pt-16" : ""}`}>
-          <h2 className="text-2xl font-display font-bold text-white uppercase tracking-tight mb-4">
+        <div className={`p-6 md:p-8 ${!config.midia ? "pt-12 md:pt-16" : ""}`}>
+          <h2 className="text-xl md:text-2xl font-display font-bold text-white uppercase tracking-tight mb-3 md:mb-4">
             {config.titulo}
           </h2>
-          <div className="text-[#AAAAAA] text-sm leading-relaxed whitespace-pre-wrap mb-8 max-h-[30vh] overflow-y-auto custom-scrollbar">
+          <div className="text-[#AAAAAA] text-sm leading-relaxed whitespace-pre-wrap mb-6 md:mb-8 max-h-[40vh] md:max-h-[30vh] overflow-y-auto custom-scrollbar">
             {config.texto}
           </div>
           <button 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { Upload, X, Save } from "lucide-react";
+import { Upload, X, Save, Trash2 } from "lucide-react";
 import { PrimaryButton } from "./PrimaryButton";
 import {
   Select,
@@ -65,6 +65,15 @@ export function AnnouncementSettings() {
     setConfig(nextConfig);
     toast.success("Anúncio salvo com sucesso!");
   };
+
+  const handleDelete = () => {
+    if (!window.confirm("Tem certeza que deseja excluir permanentemente este anúncio?")) return;
+    
+    localStorage.removeItem("netturbo_announcement");
+    setConfig(DEFAULT_CONFIG);
+    toast.success("Anúncio excluído com sucesso!");
+  };
+
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -253,7 +262,15 @@ export function AnnouncementSettings() {
             )}
           </div>
 
-          <div className="pt-4 flex justify-end">
+          <div className="pt-4 flex justify-end gap-3">
+            {config.id && (
+              <button 
+                onClick={handleDelete}
+                className="flex items-center gap-2 px-6 py-3 text-xs font-black uppercase tracking-[0.2em] text-red-500 hover:bg-red-500/10 rounded-xl transition-colors border border-red-500/20"
+              >
+                <Trash2 className="h-4 w-4" /> Excluir
+              </button>
+            )}
             <PrimaryButton onClick={handleSave} className="px-6 py-3 text-xs uppercase tracking-[0.2em]">
               <Save className="h-4 w-4 mr-2" /> Salvar Anúncio
             </PrimaryButton>

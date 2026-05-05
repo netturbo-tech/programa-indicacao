@@ -217,24 +217,24 @@ export function PerfilPage() {
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       {/* Header Mobile - Nome e Nível */}
-      <div className="lg:hidden flex items-center justify-between bg-surface-low p-4 rounded-2xl border border-outline-variant/10">
-        <div className="flex items-center gap-3">
+      <div className="lg:hidden flex items-center justify-between bg-surface-low p-3 sm:p-4 rounded-2xl border border-outline-variant/10">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
           <Avatar 
             name={user.name} 
-            size="md" 
+            size="sm" 
             src={avatar} 
-            className={cn("ring-2", currentLevel.border)} 
+            className={cn("ring-2 h-10 w-10 shrink-0", currentLevel.border)} 
           />
-          <div>
-            <h1 className="text-white font-bold text-lg">{user.name}</h1>
-            <span className={cn("text-xs font-black uppercase tracking-wider flex items-center gap-1", currentLevel.color)}>
+          <div className="min-w-0">
+            <h1 className="text-white font-bold text-sm sm:text-lg truncate">{user.name}</h1>
+            <span className={cn("text-[8px] sm:text-xs font-black uppercase tracking-wider flex items-center gap-1", currentLevel.color)}>
               {currentLevel.icon} {currentLevel.name}
             </span>
           </div>
         </div>
-        <div className="text-right">
-          <p className="text-[10px] text-outline uppercase font-black tracking-widest">Crédito</p>
-          <p className="text-primary-container font-display font-bold text-lg">
+        <div className="text-right shrink-0 pl-3">
+          <p className="text-[8px] text-outline uppercase font-black tracking-widest">Crédito</p>
+          <p className="text-primary-container font-display font-bold text-base sm:text-lg">
             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(creditoAcumulado)}
           </p>
         </div>
@@ -245,7 +245,7 @@ export function PerfilPage() {
         <div className="lg:col-span-4 space-y-6">
           <div className="bg-surface-low rounded-3xl border border-outline-variant/10 overflow-hidden shadow-2xl shadow-black/40">
             <div className={cn("h-32 w-full opacity-20", currentLevel.bg)} />
-            <div className="px-8 pb-8 -mt-16 flex flex-col items-center text-center">
+            <div className="px-5 sm:px-8 pb-8 -mt-16 flex flex-col items-center text-center">
               <div 
                 className="relative group cursor-pointer" 
                 onClick={() => fileInputRef.current?.click()}
@@ -256,7 +256,7 @@ export function PerfilPage() {
                   name={user.name} 
                   size="lg" 
                   src={avatar}
-                  className={cn("h-32 w-32 text-4xl ring-4 ring-surface-low relative z-10 transition-transform duration-500 group-hover:scale-105", currentLevel.bg)} 
+                  className={cn("h-24 w-24 sm:h-32 sm:w-32 text-4xl ring-4 ring-surface-low relative z-10 transition-transform duration-500 group-hover:scale-105", currentLevel.bg)} 
                 />
                 
                 {/* Overlay de Edição */}
@@ -345,7 +345,7 @@ export function PerfilPage() {
                   </form>
                 ) : (
                   <>
-                    <div className="flex justify-end mb-2">
+                    <div className="flex justify-end mb-4">
                       <button 
                         onClick={() => setIsEditing(true)}
                         className="text-[10px] font-black uppercase tracking-widest text-primary-container hover:underline"
@@ -353,48 +353,50 @@ export function PerfilPage() {
                         Editar Perfil
                       </button>
                     </div>
-                    <div className="flex items-center justify-between text-left">
-                      <div className="flex items-center gap-3 text-outline">
-                        <Building2 className="h-4 w-4" />
-                        <span className="text-xs font-bold uppercase tracking-wider">Setor</span>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between text-left gap-4">
+                        <div className="flex items-center gap-3 text-outline shrink-0">
+                          <Building2 className="h-4 w-4" />
+                          <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Setor</span>
+                        </div>
+                        <span className="text-white text-xs sm:text-sm font-bold truncate">{user.setor}</span>
                       </div>
-                      <span className="text-white text-sm font-bold">{user.setor}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-left">
-                      <div className="flex items-center gap-3 text-outline">
-                        <FileText className="h-4 w-4" />
-                        <span className="text-xs font-bold uppercase tracking-wider">Contrato</span>
+                      <div className="flex items-center justify-between text-left gap-4">
+                        <div className="flex items-center gap-3 text-outline shrink-0">
+                          <FileText className="h-4 w-4" />
+                          <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Contrato</span>
+                        </div>
+                        <span className="text-white text-xs sm:text-sm font-bold truncate">{user.contrato}</span>
                       </div>
-                      <span className="text-white text-sm font-bold">{user.contrato}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-left">
-                      <div className="flex items-center gap-3 text-outline">
-                        <Briefcase className="h-4 w-4" />
-                        <span className="text-xs font-bold uppercase tracking-wider">Função</span>
+                      <div className="flex items-center justify-between text-left gap-4">
+                        <div className="flex items-center gap-3 text-outline shrink-0">
+                          <Briefcase className="h-4 w-4" />
+                          <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Função</span>
+                        </div>
+                        <span className="text-white text-xs sm:text-sm font-bold truncate">{user.funcao || "-"}</span>
                       </div>
-                      <span className="text-white text-sm font-bold truncate max-w-[150px]">{user.funcao || "-"}</span>
                     </div>
                   </>
                 )}
               </div>
 
-              <div className="w-full mt-8 p-6 rounded-2xl bg-surface-high/50 border border-outline-variant/10">
-                <p className="text-[10px] text-outline uppercase font-black tracking-[0.2em] mb-1">Total de Créditos</p>
-                <p className="text-3xl font-display font-bold text-primary-container leading-none">
+              <div className="w-full mt-8 p-4 sm:p-6 rounded-2xl bg-surface-high/50 border border-outline-variant/10">
+                <p className="text-[8px] sm:text-[10px] text-outline uppercase font-black tracking-[0.2em] mb-1">Total de Créditos</p>
+                <p className="text-2xl sm:text-3xl font-display font-bold text-primary-container leading-none">
                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(creditoAcumulado)}
                 </p>
               </div>
             </div>
           </div>
-
+ 
           {/* Meta Pessoal */}
-          <div className="bg-surface-low rounded-3xl border border-outline-variant/10 p-8 space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-primary-container/10 border border-primary-container/20 grid place-items-center">
-                  <Target className="h-5 w-5 text-primary-container" />
+          <div className="bg-surface-low rounded-3xl border border-outline-variant/10 p-5 sm:p-8 space-y-4 sm:space-y-6">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-primary-container/10 border border-primary-container/20 grid place-items-center shrink-0">
+                  <Target className="h-4 w-4 sm:h-5 sm:w-5 text-primary-container" />
                 </div>
-                <h3 className="font-display font-bold text-white uppercase tracking-tight">Minha Meta</h3>
+                <h3 className="font-display font-bold text-white uppercase tracking-tight text-sm sm:text-base truncate">Minha Meta</h3>
               </div>
               <div className="relative">
                 <input 
@@ -447,43 +449,44 @@ export function PerfilPage() {
               { label: "Taxa de Conversão", value: `${Math.round(taxaConversao)}%`, icon: TrendingUp },
               { label: "Crédito Acumulado", value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(creditoAcumulado), icon: CreditCard },
             ].map((kpi, i) => (
-              <div key={i} className="bg-surface-low p-5 rounded-2xl border border-outline-variant/10 hover:border-primary-container/20 transition-all group">
-                <kpi.icon className="h-5 w-5 text-outline group-hover:text-primary-container mb-3 transition-colors" />
-                <p className="text-2xl font-display font-bold text-white mb-1 tracking-tight">{kpi.value}</p>
-                <p className="text-[10px] text-outline uppercase font-black tracking-wider leading-tight">{kpi.label}</p>
+              <div key={i} className="bg-surface-low p-3 sm:p-5 rounded-2xl border border-outline-variant/10 hover:border-primary-container/20 transition-all group">
+                <kpi.icon className="h-4 w-4 sm:h-5 sm:w-5 text-outline group-hover:text-primary-container mb-2 sm:mb-3 transition-colors" />
+                <p className="text-lg sm:text-2xl font-display font-bold text-white mb-0.5 sm:mb-1 tracking-tight">{kpi.value}</p>
+                <p className="text-[8px] sm:text-[10px] text-outline uppercase font-black tracking-wider leading-tight">{kpi.label}</p>
               </div>
             ))}
           </div>
 
           {/* Evolução de Nível */}
-          <div className="bg-surface-low rounded-3xl border border-outline-variant/10 p-8">
-            <h3 className="font-display font-bold text-white uppercase tracking-tight mb-8">Evolução de Nível</h3>
+          <div className="bg-surface-low rounded-3xl border border-outline-variant/10 p-5 sm:p-8">
+            <h3 className="font-display font-bold text-white uppercase tracking-tight mb-6 sm:mb-8 text-sm sm:text-base">Evolução de Nível</h3>
             
-            <div className="relative mb-12">
-              <div className="absolute top-1/2 left-0 w-full h-1 bg-surface-highest -translate-y-1/2 rounded-full" />
-              <div 
-                className="absolute top-1/2 left-0 h-1 bg-primary-container -translate-y-1/2 rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(202,253,0,0.3)]" 
-                style={{ width: `${(LEVELS.findIndex(l => l.name === currentLevel.name) / (LEVELS.length - 1)) * 100}%` }}
-              />
-              
-              <div className="relative flex justify-between">
+            <div className="overflow-x-auto custom-scrollbar pb-6 -mx-5 px-5 sm:mx-0 sm:px-0">
+              <div className="relative mb-8 sm:mb-10 px-8 sm:px-12 min-w-[400px]">
+                <div className="absolute top-1/2 left-8 sm:left-12 right-8 sm:right-12 h-1 bg-surface-highest -translate-y-1/2 rounded-full" />
+                <div 
+                  className="absolute top-1/2 left-8 sm:left-12 h-1 bg-primary-container -translate-y-1/2 rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(202,253,0,0.3)]" 
+                  style={{ width: `calc(${(LEVELS.findIndex(l => l.name === currentLevel.name) / (LEVELS.length - 1)) * 100}% - ${(LEVELS.findIndex(l => l.name === currentLevel.name) / (LEVELS.length - 1)) * (window.innerWidth < 640 ? 64 : 96)}px)` }}
+                />
+                
+                <div className="relative flex justify-between">
                 {LEVELS.map((lvl, i) => {
                   const isPast = conversoes >= lvl.min && lvl.name !== currentLevel.name;
                   const isCurrent = lvl.name === currentLevel.name;
                   
                   return (
-                    <div key={lvl.name} className="flex flex-col items-center gap-3 relative">
+                    <div key={lvl.name} className="flex flex-col items-center gap-2 sm:gap-3 relative">
                       <div className={cn(
-                        "h-10 w-10 rounded-full border-4 ring-8 ring-surface-low grid place-items-center z-10 transition-all duration-500",
+                        "h-8 w-8 sm:h-10 sm:w-10 rounded-full border-2 sm:border-4 ring-4 sm:ring-8 ring-surface-low grid place-items-center z-10 transition-all duration-500",
                         isPast ? "bg-primary-container border-primary-container" : 
                         isCurrent ? "bg-surface-low border-primary-container animate-pulse shadow-[0_0_20px_rgba(202,253,0,0.4)]" : 
                         "bg-surface-highest border-surface-highest"
                       )}>
-                        {isPast ? <CheckCircle2 className="h-5 w-5 text-on-primary-container" /> : <span className="text-lg">{lvl.icon}</span>}
+                        {isPast ? <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-on-primary-container" /> : <span className="text-sm sm:text-lg">{lvl.icon}</span>}
                       </div>
-                      <div className="text-center absolute -bottom-8 w-24">
+                      <div className="text-center absolute -bottom-7 sm:bottom-[-2rem] w-20 sm:w-28 left-1/2 -translate-x-1/2">
                         <p className={cn(
-                          "text-[9px] font-black uppercase tracking-wider",
+                          "text-[7px] sm:text-[9px] font-black uppercase tracking-wider leading-none",
                           isCurrent ? lvl.color : "text-outline"
                         )}>
                           {lvl.name}
@@ -493,6 +496,7 @@ export function PerfilPage() {
                   );
                 })}
               </div>
+            </div>
             </div>
 
             <div className="mt-16 space-y-4">
@@ -520,8 +524,8 @@ export function PerfilPage() {
           </div>
 
           {/* Conquistas */}
-          <div className="bg-surface-low rounded-3xl border border-outline-variant/10 p-8">
-            <h3 className="font-display font-bold text-white uppercase tracking-tight mb-6">Conquistas</h3>
+          <div className="bg-surface-low rounded-3xl border border-outline-variant/10 p-5 sm:p-8">
+            <h3 className="font-display font-bold text-white uppercase tracking-tight mb-6 text-sm sm:text-base">Conquistas</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {achievements.map((ach) => (
                 <Tooltip key={ach.id}>
