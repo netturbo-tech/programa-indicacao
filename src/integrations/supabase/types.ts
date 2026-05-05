@@ -14,79 +14,26 @@ export type Database = {
   }
   public: {
     Tables: {
-      announcement_views: {
-        Row: {
-          announcement_id: string
-          dismissed: boolean
-          id: string
-          user_id: string
-          viewed_at: string
-        }
-        Insert: {
-          announcement_id: string
-          dismissed?: boolean
-          id?: string
-          user_id: string
-          viewed_at?: string
-        }
-        Update: {
-          announcement_id?: string
-          dismissed?: boolean
-          id?: string
-          user_id?: string
-          viewed_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "announcement_views_announcement_id_fkey"
-            columns: ["announcement_id"]
-            isOneToOne: false
-            referencedRelation: "announcements"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       announcements: {
         Row: {
           active: boolean
+          config: Json
           created_at: string
-          created_by: string | null
-          dismissible: boolean
           id: string
-          image_url: string | null
-          link_label: string | null
-          link_url: string | null
-          message: string
-          title: string
-          type: string
           updated_at: string
         }
         Insert: {
           active?: boolean
+          config?: Json
           created_at?: string
-          created_by?: string | null
-          dismissible?: boolean
           id?: string
-          image_url?: string | null
-          link_label?: string | null
-          link_url?: string | null
-          message?: string
-          title?: string
-          type?: string
           updated_at?: string
         }
         Update: {
           active?: boolean
+          config?: Json
           created_at?: string
-          created_by?: string | null
-          dismissible?: boolean
           id?: string
-          image_url?: string | null
-          link_label?: string | null
-          link_url?: string | null
-          message?: string
-          title?: string
-          type?: string
           updated_at?: string
         }
         Relationships: []
