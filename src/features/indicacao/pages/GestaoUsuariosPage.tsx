@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useApp } from "../AppContext";
+import { Avatar } from "../components/Avatar";
 import type { Role, User } from "../types";
 
 type ManagedUser = {
@@ -46,7 +47,7 @@ function mapCurrentUserToManagedUser(currentUser: User): ManagedUser {
 }
 
 export function GestaoUsuariosPage() {
-  const { user, authLoading } = useApp();
+  const { user, avatar, getAvatar, authLoading } = useApp();
   const [users, setUsers] = useState<ManagedUser[]>(() =>
     user ? [mapCurrentUserToManagedUser(user)] : [],
   );
@@ -246,12 +247,20 @@ export function GestaoUsuariosPage() {
               key={managedUser.userId}
               className="grid grid-cols-[1.4fr_1.2fr_0.8fr_0.8fr] gap-4 border-b border-outline-variant/10 px-5 py-4 last:border-b-0 max-lg:grid-cols-1"
             >
-              <div>
-                <div className="font-display text-sm font-bold uppercase text-on-surface">
-                  {managedUser.name}
-                </div>
-                <div className="mt-1 text-[10px] font-black uppercase tracking-widest text-primary-container/70">
-                  {managedUser.userId === user?.id ? "Você" : "Usuário ativo"}
+              <div className="flex items-center gap-3">
+                <Avatar 
+                  name={managedUser.name} 
+                  size="sm" 
+                  src={getAvatar(managedUser.userId)}
+                  className="ring-2 ring-outline-variant/10" 
+                />
+                <div>
+                  <div className="font-display text-sm font-bold uppercase text-on-surface">
+                    {managedUser.name}
+                  </div>
+                  <div className="mt-1 text-[10px] font-black uppercase tracking-widest text-primary-container/70">
+                    {managedUser.userId === user?.id ? "Você" : "Usuário ativo"}
+                  </div>
                 </div>
               </div>
               <div className="min-w-0 text-sm font-medium text-on-surface-variant">

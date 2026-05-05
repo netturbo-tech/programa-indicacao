@@ -12,7 +12,7 @@ function fmtDate(iso: string) {
 }
 
 export function ContatosPage() {
-  const { user, visibleContatos, updateContato, deleteContato } = useApp();
+  const { user, avatar, getAvatar, visibleContatos, updateContato, deleteContato } = useApp();
   const [showFilter, setShowFilter] = useState(false);
   const [fSearch, setFSearch] = useState("");
   const [openMenu, setOpenMenu] = useState<string | null>(null);
@@ -186,6 +186,7 @@ export function ContatosPage() {
                         <Avatar
                           name={c.criadoPorNome}
                           size="sm"
+                          src={getAvatar(c.criadoPorId)}
                           className="ring-2 ring-primary-container/20"
                         />
                         <span className="text-xs font-bold uppercase tracking-tight text-on-surface">

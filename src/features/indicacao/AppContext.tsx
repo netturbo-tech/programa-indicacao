@@ -101,6 +101,7 @@ interface AppContextValue {
   setMeta: (value: number) => void;
   avatar: string | null;
   setAvatar: (value: string | null) => void;
+  getAvatar: (userId: string) => string | null;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -183,7 +184,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const stored = typeof window !== "undefined" ? localStorage.getItem("meta_trimestral_global") : null;
     return stored ? parseInt(stored) : 10;
   });
-  const [avatar, setAvatar] = useState<string | null>(null);
+  const [allAvatars, setAllAvatars] = useState<Record<string, string>>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("app_global_avatars");
+      return stored ? JSON.parse(stored) : {};
+    }
+    return {};
+  });
+
+  const avatar = user ? allAvatars[user.id] || null : null;
+
+  const getAvatar = useCallback((userId: string) => {
+    return allAvatars[userId] || null;
+  }, [allAvatars]);
+
+  const setAvatar = useCallback((data: string | null) => {
+    if (!user) return;
+    setAllAvatars(prev => {
+      const next = { ...prev };
+      if (data) next[user.id] = data;
+      else delete next[user.id];
+      localStorage.setItem("app_global_avatars", JSON.stringify(next));
+      return next;
+    });
+  }, [user]);
 
   useEffect(() => {
     if (user) {
@@ -195,10 +219,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const globalStored = localStorage.getItem("meta_trimestral_global");
         if (globalStored) setMeta(parseInt(globalStored));
       }
-
-      const userAvatarKey = `user_avatar_${user.id}`;
-      const storedAvatar = localStorage.getItem(userAvatarKey);
-      setAvatar(storedAvatar);
     }
   }, [user]);
 
@@ -206,15 +226,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (user) {
       localStorage.setItem(`meta_trimestral_${user.id}`, meta.toString());
       localStorage.setItem("meta_trimestral_global", meta.toString());
-      
-      const userAvatarKey = `user_avatar_${user.id}`;
-      if (avatar) {
-        localStorage.setItem(userAvatarKey, avatar);
-      } else {
-        localStorage.removeItem(userAvatarKey);
-      }
     }
-  }, [meta, avatar, user]);
+  }, [meta, user]);
 
   useEffect(() => {
     let cancelled = false;
@@ -826,6 +839,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setMeta,
       avatar,
       setAvatar,
+      getAvatar,
     }),
     [
       user,
@@ -853,6 +867,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setMeta,
       avatar,
       setAvatar,
+      getAvatar,
     ],
   );
 

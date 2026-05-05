@@ -20,7 +20,7 @@ import { Avatar } from "../components/Avatar";
 const COLORS = ["#CCFF00", "#3b82f6", "#a855f7", "#f97316", "#ec4899", "#14b8a6"];
 
 export function AnalyticsPage() {
-  const { indicacoes } = useApp();
+  const { indicacoes, user, avatar, getAvatar } = useApp();
 
   const total = indicacoes.length;
   const assinados = indicacoes.filter((i) => i.status === "Contrato assinado");
@@ -42,12 +42,13 @@ export function AnalyticsPage() {
   );
 
   const topIndicadores = useMemo(() => {
-    const map = new Map<string, { name: string; convertidos: number; total: number }>();
+    const map = new Map<string, { id: string; name: string; convertidos: number; total: number }>();
     for (const i of indicacoes) {
-      const m = map.get(i.criadoPorNome) ?? { name: i.criadoPorNome, convertidos: 0, total: 0 };
+      const id = i.criadoPorId;
+      const m = map.get(id) ?? { id, name: i.criadoPorNome, convertidos: 0, total: 0 };
       m.total += 1;
       if (i.status === "Contrato assinado") m.convertidos += 1;
-      map.set(i.criadoPorNome, m);
+      map.set(id, m);
     }
     return Array.from(map.values())
       .sort((a, b) => b.convertidos - a.convertidos || b.total - a.total)
@@ -182,7 +183,7 @@ export function AnalyticsPage() {
                 <div className="grid h-6 w-6 place-items-center rounded-md bg-[#2a2a2a] text-[11px] font-bold text-white">
                   {idx + 1}
                 </div>
-                <Avatar name={u.name} size="sm" />
+                <Avatar name={u.name} size="sm" src={getAvatar(u.id)} />
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-semibold text-white">{u.name}</div>
                   <div className="text-[11px] text-[#AAAAAA]">
