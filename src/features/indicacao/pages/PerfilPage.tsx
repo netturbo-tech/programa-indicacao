@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { useApp, LEVELS } from "../AppContext";
 import { 
   Rocket, 
@@ -16,7 +16,8 @@ import {
   Briefcase,
   Building2,
   FileText,
-  CreditCard
+  CreditCard,
+  Camera
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar } from "../components/Avatar";
@@ -28,9 +29,28 @@ import {
   TooltipProvider, 
   TooltipTrigger 
 } from "@/components/ui/tooltip";
+import { toast } from "sonner";
 
 export function PerfilPage() {
-  const { user, indicacoes, meta, setMeta } = useApp();
+  const { user, indicacoes, meta, setMeta, avatar, setAvatar } = useApp();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("A imagem deve ter no máximo 2MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAvatar(reader.result as string);
+      toast.success("Foto de perfil atualizada!");
+    };
+    reader.readAsDataURL(file);
+  };
 
   const userIndicacoes = useMemo(() => {
     if (!user) return [];
@@ -107,7 +127,12 @@ export function PerfilPage() {
       {/* Header Mobile - Nome e Nível */}
       <div className="lg:hidden flex items-center justify-between bg-surface-low p-4 rounded-2xl border border-outline-variant/10">
         <div className="flex items-center gap-3">
-          <Avatar name={user.name} size="md" className={cn("ring-2", currentLevel.border)} />
+          <Avatar 
+            name={user.name} 
+            size="md" 
+            src={avatar} 
+            className={cn("ring-2", currentLevel.border)} 
+          />
           <div>
             <h1 className="text-white font-bold text-lg">{user.name}</h1>
             <span className={cn("text-xs font-black uppercase tracking-wider flex items-center gap-1", currentLevel.color)}>
@@ -129,17 +154,37 @@ export function PerfilPage() {
           <div className="bg-surface-low rounded-3xl border border-outline-variant/10 overflow-hidden shadow-2xl shadow-black/40">
             <div className={cn("h-32 w-full opacity-20", currentLevel.bg)} />
             <div className="px-8 pb-8 -mt-16 flex flex-col items-center text-center">
-              <div className="relative group">
+              <div 
+                className="relative group cursor-pointer" 
+                onClick={() => fileInputRef.current?.click()}
+                title="Clique para mudar a foto"
+              >
                 <div className={cn("absolute inset-0 rounded-full blur-2xl opacity-40 transition-all duration-500 group-hover:opacity-70", currentLevel.bg)} />
                 <Avatar 
                   name={user.name} 
                   size="lg" 
-                  className={cn("h-32 w-32 text-4xl ring-4 ring-surface-low relative z-10", currentLevel.bg)} 
+                  src={avatar}
+                  className={cn("h-32 w-32 text-4xl ring-4 ring-surface-low relative z-10 transition-transform duration-500 group-hover:scale-105", currentLevel.bg)} 
                 />
-                <div className="absolute -bottom-2 -right-2 bg-surface-highest border border-outline-variant/20 rounded-full h-10 w-10 grid place-items-center z-20 shadow-lg">
+                
+                {/* Overlay de Edição */}
+                <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col items-center justify-center z-20 backdrop-blur-[2px]">
+                  <Camera className="text-white h-8 w-8 mb-1 animate-in zoom-in duration-300" />
+                  <span className="text-[8px] text-white font-black uppercase tracking-widest">Editar</span>
+                </div>
+
+                <div className="absolute -bottom-2 -right-2 bg-surface-highest border border-outline-variant/20 rounded-full h-10 w-10 grid place-items-center z-30 shadow-lg">
                   <span className="text-xl">{currentLevel.icon}</span>
                 </div>
               </div>
+
+              <input 
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={handleAvatarChange}
+              />
 
               <div className="mt-6 space-y-1">
                 <h2 className="text-2xl font-display font-bold text-white uppercase tracking-tight">{user.name}</h2>

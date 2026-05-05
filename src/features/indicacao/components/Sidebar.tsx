@@ -27,7 +27,7 @@ const ROLE_LABEL: Record<string, string> = {
 };
 
 export function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle?: () => void }) {
-  const { user, logout, refreshData, indicacoes } = useApp();
+  const { user, logout, refreshData, indicacoes, avatar } = useApp();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -164,6 +164,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle
           <Avatar
             name={user.name}
             size={collapsed ? "sm" : "md"}
+            src={avatar}
             className={cn("ring-2", currentLevel.border)}
           />
           {!collapsed && (

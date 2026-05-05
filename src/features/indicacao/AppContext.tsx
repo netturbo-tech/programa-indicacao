@@ -99,6 +99,8 @@ interface AppContextValue {
   deleteContato: (id: string) => void;
   meta: number;
   setMeta: (value: number) => void;
+  avatar: string | null;
+  setAvatar: (value: string | null) => void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -181,26 +183,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const stored = typeof window !== "undefined" ? localStorage.getItem("meta_trimestral_global") : null;
     return stored ? parseInt(stored) : 10;
   });
+  const [avatar, setAvatar] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
       const userMetaKey = `meta_trimestral_${user.id}`;
-      const stored = localStorage.getItem(userMetaKey);
-      if (stored) {
-        setMeta(parseInt(stored));
+      const storedMeta = localStorage.getItem(userMetaKey);
+      if (storedMeta) {
+        setMeta(parseInt(storedMeta));
       } else {
         const globalStored = localStorage.getItem("meta_trimestral_global");
         if (globalStored) setMeta(parseInt(globalStored));
       }
+
+      const userAvatarKey = `user_avatar_${user.id}`;
+      const storedAvatar = localStorage.getItem(userAvatarKey);
+      setAvatar(storedAvatar);
     }
   }, [user]);
 
   useEffect(() => {
     if (user) {
       localStorage.setItem(`meta_trimestral_${user.id}`, meta.toString());
+      localStorage.setItem("meta_trimestral_global", meta.toString());
+      
+      const userAvatarKey = `user_avatar_${user.id}`;
+      if (avatar) {
+        localStorage.setItem(userAvatarKey, avatar);
+      } else {
+        localStorage.removeItem(userAvatarKey);
+      }
     }
-    localStorage.setItem("meta_trimestral_global", meta.toString());
-  }, [meta, user]);
+  }, [meta, avatar, user]);
 
   useEffect(() => {
     let cancelled = false;
@@ -810,6 +824,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       deleteContato,
       meta,
       setMeta,
+      avatar,
+      setAvatar,
     }),
     [
       user,
@@ -835,6 +851,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       deleteContato,
       meta,
       setMeta,
+      avatar,
+      setAvatar,
     ],
   );
 
