@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { useLocation } from "@tanstack/react-router";
 import { useApp } from "../AppContext";
+import { supabase } from "@/integrations/supabase/client";
 
 export function AnnouncementPopup() {
   const { user } = useApp();
@@ -18,59 +19,59 @@ export function AnnouncementPopup() {
       return;
     }
 
-    const saved = localStorage.getItem("netturbo_announcement");
-    if (!saved) return;
+    (async () => {
+      const { data } = await supabase
+        .from("announcements")
+        .select("config, active")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!data || !data.active) return;
+      const parsed: any = data.config || {};
+      if (!parsed.ativo || !parsed.id) return;
 
-    let parsed;
-    try {
-      parsed = JSON.parse(saved);
-    } catch {
-      return;
-    }
+      const seenKey = `announcement_seen_${user.id}_${parsed.id}`;
+      const sessionKey = `announcement_session_${user.id}_${parsed.id}`;
+      const now = new Date();
 
-    if (!parsed.ativo || !parsed.id) return;
+      let shouldShow = false;
 
-    const seenKey = `announcement_seen_${user.id}_${parsed.id}`;
-    const sessionKey = `announcement_session_${user.id}_${parsed.id}`;
-    const now = new Date();
-
-    let shouldShow = false;
-
-    if (parsed.exibicao === "uma_vez_por_dia") {
-      const lastSeen = localStorage.getItem(seenKey);
-      if (!lastSeen) {
-        shouldShow = true;
-      } else {
-        const lastSeenDate = new Date(lastSeen).toLocaleDateString('pt-BR');
-        const currentDate = now.toLocaleDateString('pt-BR');
-        if (lastSeenDate !== currentDate) shouldShow = true;
-      }
-    } else if (parsed.exibicao === "ao_login" || parsed.exibicao === "sempre" || parsed.exibicao === "periodo_especifico") {
-      let withinPeriod = true;
-      if (parsed.exibicao === "periodo_especifico") {
-        if (parsed.dataInicio && new Date(parsed.dataInicio) > now) withinPeriod = false;
-        // Se a data final foi ontem, já passou (comparar com fim do dia)
-        if (parsed.dataFim) {
-          const fim = new Date(parsed.dataFim);
-          fim.setHours(23, 59, 59, 999);
-          if (fim < now) withinPeriod = false;
-        }
-      }
-
-      if (withinPeriod) {
-        const seenInSession = sessionStorage.getItem(sessionKey);
-        if (!seenInSession) {
+      if (parsed.exibicao === "uma_vez_por_dia") {
+        const lastSeen = localStorage.getItem(seenKey);
+        if (!lastSeen) {
           shouldShow = true;
+        } else {
+          const lastSeenDate = new Date(lastSeen).toLocaleDateString("pt-BR");
+          const currentDate = now.toLocaleDateString("pt-BR");
+          if (lastSeenDate !== currentDate) shouldShow = true;
+        }
+      } else if (
+        parsed.exibicao === "ao_login" ||
+        parsed.exibicao === "sempre" ||
+        parsed.exibicao === "periodo_especifico"
+      ) {
+        let withinPeriod = true;
+        if (parsed.exibicao === "periodo_especifico") {
+          if (parsed.dataInicio && new Date(parsed.dataInicio) > now) withinPeriod = false;
+          if (parsed.dataFim) {
+            const fim = new Date(parsed.dataFim);
+            fim.setHours(23, 59, 59, 999);
+            if (fim < now) withinPeriod = false;
+          }
+        }
+
+        if (withinPeriod) {
+          const seenInSession = sessionStorage.getItem(sessionKey);
+          if (!seenInSession) shouldShow = true;
         }
       }
-    }
 
-    if (shouldShow) {
-      setConfig(parsed);
-      setRender(true);
-      // Small delay to allow fade-in animation
-      setTimeout(() => setShow(true), 50);
-    }
+      if (shouldShow) {
+        setConfig(parsed);
+        setRender(true);
+        setTimeout(() => setShow(true), 50);
+      }
+    })();
   }, [user, location.pathname]);
 
   useEffect(() => {

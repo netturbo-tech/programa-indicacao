@@ -185,10 +185,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return stored ? parseInt(stored) : 10;
   });
   const [allAvatars, setAllAvatars] = useState<Record<string, string>>(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("app_global_avatars");
-      return stored ? JSON.parse(stored) : {};
-    }
     return {};
   });
 
@@ -198,13 +194,48 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return allAvatars[userId] || null;
   }, [allAvatars]);
 
-  const setAvatar = useCallback((data: string | null) => {
+  const setAvatar = useCallback(async (data: string | null) => {
     if (!user) return;
-    setAllAvatars(prev => {
+    const userId = user.authUserId || user.id;
+
+    let publicUrl: string | null = null;
+
+    if (data) {
+      // data is a data URL (base64). Convert to Blob and upload to storage.
+      try {
+        const res = await fetch(data);
+        const blob = await res.blob();
+        const ext = (blob.type.split("/")[1] || "png").split("+")[0];
+        const path = `${userId}/avatar-${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("avatars")
+          .upload(path, blob, { upsert: true, contentType: blob.type });
+        if (upErr) {
+          toast.error("Erro ao enviar avatar: " + upErr.message);
+          return;
+        }
+        const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+        publicUrl = urlData.publicUrl;
+      } catch (err: any) {
+        toast.error("Erro ao processar imagem: " + (err?.message || ""));
+        return;
+      }
+    }
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ avatar_url: publicUrl })
+      .eq("user_id", userId);
+
+    if (error) {
+      toast.error("Erro ao salvar avatar: " + error.message);
+      return;
+    }
+
+    setAllAvatars((prev) => {
       const next = { ...prev };
-      if (data) next[user.id] = data;
+      if (publicUrl) next[user.id] = publicUrl;
       else delete next[user.id];
-      localStorage.setItem("app_global_avatars", JSON.stringify(next));
       return next;
     });
   }, [user]);
@@ -308,6 +339,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       setIndicacoes(indicacoesResult.data?.map(mapIndicacao) ?? []);
       setContatos(contatosResult.data?.map(mapContato) ?? []);
+
+      // Load all avatars (RLS allows authenticated users to view all profiles)
+      const { data: avatarRows } = await supabase
+        .from("profiles")
+        .select("user_id, avatar_url")
+        .not("avatar_url", "is", null);
+      if (!cancelled && requestVersion === loadVersion && avatarRows) {
+        const map: Record<string, string> = {};
+        for (const row of avatarRows) {
+          if (row.avatar_url) map[row.user_id] = row.avatar_url;
+        }
+        setAllAvatars(map);
+      }
     };
 
     const {

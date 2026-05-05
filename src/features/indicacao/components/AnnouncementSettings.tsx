@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Upload, X, Save, Trash2 } from "lucide-react";
 import { PrimaryButton } from "./PrimaryButton";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Select,
   SelectContent,
@@ -41,35 +42,70 @@ const DEFAULT_CONFIG: AnnouncementConfig = {
 
 export function AnnouncementSettings() {
   const [config, setConfig] = useState<AnnouncementConfig>(DEFAULT_CONFIG);
+  const [rowId, setRowId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem("netturbo_announcement");
-    if (saved) {
-      try {
-        setConfig(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to parse announcement config", e);
+    (async () => {
+      const { data, error } = await supabase
+        .from("announcements")
+        .select("id, config, active")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) {
+        console.error("Failed to load announcement", error);
+      } else if (data) {
+        setRowId(data.id);
+        setConfig({ ...DEFAULT_CONFIG, ...(data.config as any), ativo: data.active });
       }
-    }
+      setLoading(false);
+    })();
   }, []);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const nextConfig = {
       ...config,
       id: config.id || crypto.randomUUID(),
       criadoEm: config.criadoEm || new Date().toISOString(),
       atualizadoEm: new Date().toISOString(),
     };
-    localStorage.setItem("netturbo_announcement", JSON.stringify(nextConfig));
+    if (rowId) {
+      const { error } = await supabase
+        .from("announcements")
+        .update({ config: nextConfig as any, active: nextConfig.ativo })
+        .eq("id", rowId);
+      if (error) {
+        toast.error("Erro ao salvar: " + error.message);
+        return;
+      }
+    } else {
+      const { data, error } = await supabase
+        .from("announcements")
+        .insert({ config: nextConfig as any, active: nextConfig.ativo })
+        .select("id")
+        .single();
+      if (error) {
+        toast.error("Erro ao salvar: " + error.message);
+        return;
+      }
+      setRowId(data.id);
+    }
     setConfig(nextConfig);
     toast.success("Anúncio salvo com sucesso!");
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!window.confirm("Tem certeza que deseja excluir permanentemente este anúncio?")) return;
-    
-    localStorage.removeItem("netturbo_announcement");
+    if (rowId) {
+      const { error } = await supabase.from("announcements").delete().eq("id", rowId);
+      if (error) {
+        toast.error("Erro ao excluir: " + error.message);
+        return;
+      }
+    }
+    setRowId(null);
     setConfig(DEFAULT_CONFIG);
     toast.success("Anúncio excluído com sucesso!");
   };

@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcements: {
+        Row: {
+          active: boolean
+          config: Json
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          config?: Json
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          config?: Json
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contatos: {
         Row: {
           celular: string
@@ -130,6 +154,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           contrato: Database["public"]["Enums"]["contrato_tipo"]
           cpf: string | null
           created_at: string
@@ -145,6 +170,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          avatar_url?: string | null
           contrato?: Database["public"]["Enums"]["contrato_tipo"]
           cpf?: string | null
           created_at?: string
@@ -160,6 +186,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          avatar_url?: string | null
           contrato?: Database["public"]["Enums"]["contrato_tipo"]
           cpf?: string | null
           created_at?: string
