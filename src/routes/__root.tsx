@@ -113,10 +113,14 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+import { TooltipProvider } from "@/components/ui/tooltip";
+
 function RootComponent() {
   return (
     <AppProvider>
-      <Outlet />
+      <TooltipProvider delayDuration={0}>
+        <Outlet />
+      </TooltipProvider>
       <Toaster
         theme="dark"
         position="top-right"

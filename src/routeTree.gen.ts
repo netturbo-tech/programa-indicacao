@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppPerfilRouteImport } from './routes/app.perfil'
 import { Route as AppNovoContatoRouteImport } from './routes/app.novo-contato'
 import { Route as AppNovaRouteImport } from './routes/app.nova'
 import { Route as AppIndicacoesRouteImport } from './routes/app.indicacoes'
@@ -34,6 +35,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppPerfilRoute = AppPerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppNovoContatoRoute = AppNovoContatoRouteImport.update({
   id: '/novo-contato',
@@ -82,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/app/indicacoes': typeof AppIndicacoesRoute
   '/app/nova': typeof AppNovaRoute
   '/app/novo-contato': typeof AppNovoContatoRoute
+  '/app/perfil': typeof AppPerfilRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByTo {
   '/app/indicacoes': typeof AppIndicacoesRoute
   '/app/nova': typeof AppNovaRoute
   '/app/novo-contato': typeof AppNovoContatoRoute
+  '/app/perfil': typeof AppPerfilRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -107,6 +115,7 @@ export interface FileRoutesById {
   '/app/indicacoes': typeof AppIndicacoesRoute
   '/app/nova': typeof AppNovaRoute
   '/app/novo-contato': typeof AppNovoContatoRoute
+  '/app/perfil': typeof AppPerfilRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -121,6 +130,7 @@ export interface FileRouteTypes {
     | '/app/indicacoes'
     | '/app/nova'
     | '/app/novo-contato'
+    | '/app/perfil'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -133,6 +143,7 @@ export interface FileRouteTypes {
     | '/app/indicacoes'
     | '/app/nova'
     | '/app/novo-contato'
+    | '/app/perfil'
   id:
     | '__root__'
     | '/'
@@ -145,6 +156,7 @@ export interface FileRouteTypes {
     | '/app/indicacoes'
     | '/app/nova'
     | '/app/novo-contato'
+    | '/app/perfil'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -175,6 +187,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/app/perfil': {
+      id: '/app/perfil'
+      path: '/perfil'
+      fullPath: '/app/perfil'
+      preLoaderRoute: typeof AppPerfilRouteImport
+      parentRoute: typeof AppRoute
     }
     '/app/novo-contato': {
       id: '/app/novo-contato'
@@ -236,6 +255,7 @@ interface AppRouteChildren {
   AppIndicacoesRoute: typeof AppIndicacoesRoute
   AppNovaRoute: typeof AppNovaRoute
   AppNovoContatoRoute: typeof AppNovoContatoRoute
+  AppPerfilRoute: typeof AppPerfilRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -246,6 +266,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppIndicacoesRoute: AppIndicacoesRoute,
   AppNovaRoute: AppNovaRoute,
   AppNovoContatoRoute: AppNovoContatoRoute,
+  AppPerfilRoute: AppPerfilRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

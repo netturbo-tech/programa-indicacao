@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
+  User,
   PlusCircle,
   ListChecks,
   BarChart3,
@@ -12,10 +13,11 @@ import {
   UsersRound,
   RefreshCw,
 } from "lucide-react";
-import { useApp } from "../AppContext";
+import { useApp, LEVELS } from "../AppContext";
 import { Logo } from "./Logo";
 import { Avatar } from "./Avatar";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { cn } from "@/lib/utils";
 
 const ROLE_LABEL: Record<string, string> = {
   admin: "Administrador",
@@ -25,11 +27,20 @@ const ROLE_LABEL: Record<string, string> = {
 };
 
 export function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle?: () => void }) {
-  const { user, logout, refreshData } = useApp();
+  const { user, logout, refreshData, indicacoes } = useApp();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  const userConversoes = useMemo(() => {
+    if (!user) return 0;
+    return indicacoes.filter((i) => i.criadoPorId === user.id && i.status === "Contrato assinado").length;
+  }, [indicacoes, user]);
+
+  const currentLevel = useMemo(() => {
+    return LEVELS.find((l) => userConversoes >= l.min && userConversoes <= l.max) || LEVELS[0];
+  }, [userConversoes]);
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -52,38 +63,53 @@ export function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle
     }
   };
 
-  const NAV =
-    user.role === "aprovador"
-      ? ([
-          { to: "/app/indicacoes", label: "Indicações", Icon: ListChecks },
-          { to: "/app/contatos", label: "Contatos Quentes", Icon: Contact },
-          { to: "/app/analytics", label: "Analytics", Icon: BarChart3 },
-        ] as const)
-      : user.role === "admin"
-        ? ([
-            { to: "/app/nova", label: "Nova Indicação", Icon: PlusCircle },
-            { to: "/app/novo-contato", label: "Novo Contato Quente", Icon: UserPlus },
-            { to: "/app/indicacoes", label: "Registros", Icon: ListChecks },
-            { to: "/app/analytics", label: "Analytics", Icon: BarChart3 },
-          ] as const)
-        : user.role === "usuario_ra"
-          ? ([
-              { to: "/app/nova", label: "Nova Indicação", Icon: PlusCircle },
-              { to: "/app/indicacoes", label: "Indicações", Icon: ListChecks },
-              { to: "/app/novo-contato", label: "Novo Contato Quente", Icon: UserPlus },
-              { to: "/app/contatos", label: "Contatos Quentes", Icon: Contact },
-              { to: "/app/analytics", label: "Analytics", Icon: BarChart3 },
-            ] as const)
-          : ([
-              { to: "/app/nova", label: "Nova Indicação", Icon: PlusCircle },
-              { to: "/app/indicacoes", label: "Indicações", Icon: ListChecks },
-              { to: "/app/analytics", label: "Analytics", Icon: BarChart3 },
-            ] as const);
+  const menuGroups = useMemo(() => {
+    if (!user) return [];
+    const sections: { title: string; items: any[] }[] = [];
 
-  const adminNav =
-    user.role === "admin"
-      ? ([{ to: "/app/gestao-usuarios", label: "Gestão de Usuários", Icon: UsersRound }] as const)
-      : [];
+    // Pessoal
+    sections.push({
+      title: "Pessoal",
+      items: [{ to: "/app/perfil", label: "Meu Perfil", Icon: User }]
+    });
+
+    // Ações
+    const acoes = [];
+    if (user.role !== "aprovador") {
+      acoes.push({ to: "/app/nova", label: "Nova Indicação", Icon: PlusCircle });
+    }
+    if (user.role === "admin" || user.role === "usuario_ra") {
+      acoes.push({ to: "/app/novo-contato", label: "Novo Contato Quente", Icon: UserPlus });
+    }
+    if (acoes.length > 0) {
+      sections.push({ title: "Operações", items: acoes });
+    }
+
+    // Registros
+    const registros = [];
+    registros.push({ to: "/app/indicacoes", label: user.role === "admin" ? "Registros" : "Indicações", Icon: ListChecks });
+    if (user.role === "aprovador" || user.role === "usuario_ra") {
+      registros.push({ to: "/app/contatos", label: "Contatos Quentes", Icon: Contact });
+    }
+    sections.push({ title: "Registros", items: registros });
+
+    // Análises & Config
+    const sistema = [
+      { to: "/app/analytics", label: "Analytics", Icon: BarChart3 },
+      { to: "/app/configuracoes", label: "Configurações", Icon: Settings },
+    ];
+    sections.push({ title: "Sistema", items: sistema });
+
+    // Administração
+    if (user.role === "admin") {
+      sections.push({
+        title: "Gestão",
+        items: [{ to: "/app/gestao-usuarios", label: "Usuários", Icon: UsersRound }]
+      });
+    }
+
+    return sections;
+  }, [user]);
 
   return (
     <>
@@ -138,86 +164,52 @@ export function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle
           <Avatar
             name={user.name}
             size={collapsed ? "sm" : "md"}
-            className="ring-2 ring-primary-container/20"
+            className={cn("ring-2", currentLevel.border)}
           />
           {!collapsed && (
             <div className="min-w-0">
               <div className="truncate text-sm font-bold text-white uppercase tracking-tight">
                 {user.name}
               </div>
-              <div className="truncate text-[10px] font-black uppercase tracking-widest text-primary-container/70">
-                {ROLE_LABEL[user.role]}
+              <div className="flex flex-col">
+                <div className="truncate text-[9px] font-black uppercase tracking-widest text-outline">
+                  {ROLE_LABEL[user.role]}
+                </div>
+                <div className={cn("truncate text-[9px] font-black uppercase tracking-widest flex items-center gap-1", currentLevel.color)}>
+                  {currentLevel.icon} {currentLevel.name}
+                </div>
               </div>
             </div>
           )}
         </div>
 
-        <nav className="flex-1 px-4 space-y-2">
-          {NAV.map(({ to, label, Icon }) => {
-            const active = location.pathname.startsWith(to);
-            return (
-              <Link
-                key={to}
-                to={to}
-                title={collapsed ? label : undefined}
-                className={`flex items-center gap-4 rounded-xl px-4 py-3 text-[11px] font-black uppercase tracking-[0.15em] transition-all duration-200 ${
-                  collapsed ? "justify-center" : ""
-                } ${
-                  active
-                    ? "bg-primary-container text-on-primary-container shadow-[0_10px_20px_rgba(202,253,0,0.2)]"
-                    : "text-outline hover:bg-surface-high hover:text-white"
-                }`}
-              >
-                <Icon
-                  className={`h-4 w-4 shrink-0 transition-transform ${active ? "scale-110" : ""}`}
-                />
-                {!collapsed && <span className="font-display">{label}</span>}
-              </Link>
-            );
-          })}
-          {adminNav.map(({ to, label, Icon }) => {
-            const active = location.pathname.startsWith(to);
-            return (
-              <Link
-                key={to}
-                to={to}
-                title={collapsed ? label : undefined}
-                className={`flex items-center gap-4 rounded-xl px-4 py-3 text-[11px] font-black uppercase tracking-[0.15em] transition-all duration-200 ${
-                  collapsed ? "justify-center" : ""
-                } ${
-                  active
-                    ? "bg-primary-container text-on-primary-container shadow-[0_10px_20px_rgba(202,253,0,0.2)]"
-                    : "text-outline hover:bg-surface-high hover:text-white"
-                }`}
-              >
-                <Icon
-                  className={`h-4 w-4 shrink-0 transition-transform ${active ? "scale-110" : ""}`}
-                />
-                {!collapsed && <span className="font-display">{label}</span>}
-              </Link>
-            );
-          })}
-          {(() => {
-            const active = location.pathname.startsWith("/app/configuracoes");
-            return (
-              <Link
-                to="/app/configuracoes"
-                title={collapsed ? "Configurações" : undefined}
-                className={`flex items-center gap-4 rounded-xl px-4 py-3 text-[11px] font-black uppercase tracking-[0.15em] transition-all duration-200 ${
-                  collapsed ? "justify-center" : ""
-                } ${
-                  active
-                    ? "bg-primary-container text-on-primary-container shadow-[0_10px_20px_rgba(202,253,0,0.2)]"
-                    : "text-outline hover:bg-surface-high hover:text-white"
-                }`}
-              >
-                <Settings
-                  className={`h-4 w-4 shrink-0 transition-transform ${active ? "scale-110" : ""}`}
-                />
-                {!collapsed && <span className="font-display">Configurações</span>}
-              </Link>
-            );
-          })()}
+        <nav className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar py-4">
+          {menuGroups.map((group) => (
+            <div key={group.title} className="space-y-1">
+              {group.items.map(({ to, label, Icon }) => {
+                const active = location.pathname.startsWith(to);
+                return (
+                  <Link
+                    key={to}
+                    to={to}
+                    title={collapsed ? label : undefined}
+                    className={`flex items-center gap-4 rounded-xl px-4 py-3 text-[11px] font-black uppercase tracking-[0.15em] transition-all duration-200 ${
+                      collapsed ? "justify-center" : ""
+                    } ${
+                      active
+                        ? "bg-primary-container text-on-primary-container shadow-[0_10px_20px_rgba(202,253,0,0.2)]"
+                        : "text-outline hover:bg-surface-high hover:text-white"
+                    }`}
+                  >
+                    <Icon
+                      className={`h-4 w-4 shrink-0 transition-transform ${active ? "scale-110" : ""}`}
+                    />
+                    {!collapsed && <span className="font-display">{label}</span>}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
 
         <div className="p-4 space-y-2 mt-auto border-t border-outline-variant/5">

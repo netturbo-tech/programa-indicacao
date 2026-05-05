@@ -42,7 +42,7 @@ function maskCnpj(value: string) {
 }
 
 export function NovaIndicacaoPage() {
-  const { user, createIndicacao, countCltThisMonth, creditoAtual, indicacoes } = useApp();
+  const { user, createIndicacao, countCltThisMonth, creditoAtual, indicacoes, meta } = useApp();
   const navigate = useNavigate();
   const [form, setForm] = useState({
     leadNome: "",
@@ -118,7 +118,7 @@ export function NovaIndicacaoPage() {
       (i) => i.criadoPorId === user.id && new Date(i.criadoEm) >= start,
     ).length;
   })();
-  const progresso = Math.min(100, Math.round((trimAtual / META_TRIMESTRAL) * 100));
+  const progresso = Math.min(100, Math.round((trimAtual / meta) * 100));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -331,7 +331,7 @@ export function NovaIndicacaoPage() {
                 <div>
                   <div className="flex justify-between items-end mb-2">
                     <span className="text-[10px] uppercase font-bold text-outline">Meta Trimestral</span>
-                    <span className="text-xs font-bold text-white">{trimAtual}/{META_TRIMESTRAL}</span>
+                    <span className="text-xs font-bold text-white">{trimAtual}/{meta}</span>
                   </div>
                   <div className="h-1.5 w-full bg-surface-highest rounded-full overflow-hidden">
                     <div 

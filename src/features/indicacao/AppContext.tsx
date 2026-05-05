@@ -24,6 +24,13 @@ import type { Database } from "@/integrations/supabase/types";
 import type { Session } from "@supabase/supabase-js";
 import { toast } from "sonner";
 
+export const LEVELS = [
+  { name: "Gente Turbo", min: 0, max: 2, icon: "🌱", color: "text-primary-container", bg: "bg-primary-container", border: "border-primary-container/20" },
+  { name: "Conector", min: 3, max: 6, icon: "🦖", color: "text-blue-400", bg: "bg-blue-400", border: "border-blue-400/20" },
+  { name: "Acelerador", min: 7, max: 12, icon: "🔥", color: "text-orange-500", bg: "bg-orange-500", border: "border-orange-500/20" },
+  { name: "Sangue Verde", min: 13, max: Infinity, icon: "💚", color: "text-emerald-500", bg: "bg-emerald-500", border: "border-emerald-500/20" }
+];
+
 const now = () => new Date().toISOString();
 type IndicacaoUpdate = Database["public"]["Tables"]["indicacoes"]["Update"];
 
@@ -90,6 +97,8 @@ interface AppContextValue {
   ) => Promise<{ ok: boolean; error?: string }>;
   updateContato: (id: string, patch: Partial<Contato>) => void;
   deleteContato: (id: string) => void;
+  meta: number;
+  setMeta: (value: number) => void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -168,6 +177,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<User[]>([]);
   const [indicacoes, setIndicacoes] = useState<Indicacao[]>([]);
   const [contatos, setContatos] = useState<Contato[]>([]);
+  const [meta, setMeta] = useState<number>(() => {
+    const stored = typeof window !== "undefined" ? localStorage.getItem("meta_trimestral_global") : null;
+    return stored ? parseInt(stored) : 10;
+  });
+
+  useEffect(() => {
+    if (user) {
+      const userMetaKey = `meta_trimestral_${user.id}`;
+      const stored = localStorage.getItem(userMetaKey);
+      if (stored) {
+        setMeta(parseInt(stored));
+      } else {
+        const globalStored = localStorage.getItem("meta_trimestral_global");
+        if (globalStored) setMeta(parseInt(globalStored));
+      }
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem(`meta_trimestral_${user.id}`, meta.toString());
+    }
+    localStorage.setItem("meta_trimestral_global", meta.toString());
+  }, [meta, user]);
 
   useEffect(() => {
     let cancelled = false;
@@ -775,6 +808,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       createContato,
       updateContato,
       deleteContato,
+      meta,
+      setMeta,
     }),
     [
       user,
@@ -798,6 +833,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       createContato,
       updateContato,
       deleteContato,
+      meta,
+      setMeta,
     ],
   );
 

@@ -161,4 +161,31 @@
     color-scheme: dark;
     background-color: var(--color-background);
   }
+
+  /* Custom Scrollbar Global */
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #262626;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #cafd00;
+    box-shadow: 0 0 10px rgba(202, 253, 0, 0.3);
+  }
+
+  /* Firefox support */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #262626 transparent;
+  }
 }
