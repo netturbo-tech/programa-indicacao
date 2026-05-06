@@ -739,7 +739,7 @@ export function PerfilPage() {
         </div>
 
         {/* Coluna Direita - Stats e Histórico */}
-        <div className="lg:col-span-8 space-y-8">
+        <div className="min-w-0 lg:col-span-8 space-y-6 sm:space-y-8">
           {/* KPI Cards */}
           <div className="grid min-w-0 grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             {[
@@ -757,15 +757,15 @@ export function PerfilPage() {
           </div>
 
           {/* Evolução de Nível */}
-          <div className="bg-surface-low rounded-3xl border border-outline-variant/10 p-5 sm:p-8">
+          <div className="min-w-0 bg-surface-low rounded-2xl sm:rounded-3xl border border-outline-variant/10 p-4 sm:p-8 overflow-hidden">
             <h3 className="font-display font-bold text-white uppercase tracking-tight mb-6 sm:mb-8 text-sm sm:text-base">Evolução de Nível</h3>
             
-            <div className="overflow-x-auto custom-scrollbar pb-6 -mx-5 px-5 sm:mx-0 sm:px-0">
-              <div className="relative mb-8 sm:mb-10 px-8 sm:px-12 min-w-[400px]">
+            <div className="pb-6">
+              <div className="relative mb-8 sm:mb-10 px-3 sm:px-12">
                 <div className="absolute top-1/2 left-8 sm:left-12 right-8 sm:right-12 h-1 bg-surface-highest -translate-y-1/2 rounded-full" />
                 <div 
                   className="absolute top-1/2 left-8 sm:left-12 h-1 bg-primary-container -translate-y-1/2 rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(202,253,0,0.3)]" 
-                  style={{ width: `calc(${(LEVELS.findIndex(l => l.name === currentLevel.name) / (LEVELS.length - 1)) * 100}% - ${(LEVELS.findIndex(l => l.name === currentLevel.name) / (LEVELS.length - 1)) * (window.innerWidth < 640 ? 64 : 96)}px)` }}
+                  style={{ width: `calc(${(LEVELS.findIndex(l => l.name === currentLevel.name) / (LEVELS.length - 1)) * 100}% - ${(LEVELS.findIndex(l => l.name === currentLevel.name) / (LEVELS.length - 1)) * 96}px)` }}
                 />
                 
                 <div className="relative flex justify-between">
@@ -799,7 +799,7 @@ export function PerfilPage() {
             </div>
 
             <div className="mt-16 space-y-4">
-              <div className="flex justify-between items-end">
+              <div className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-end">
                 <p className="text-sm text-outline">
                   {nextLevel ? (
                     <>Faltam <span className="text-primary-container font-bold">{nextLevel.min - conversoes}</span> conversões para o próximo nível</>
