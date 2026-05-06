@@ -762,9 +762,9 @@ export function PerfilPage() {
             
             <div className="pb-6">
               <div className="relative mb-8 sm:mb-10 px-3 sm:px-12">
-                <div className="absolute top-1/2 left-8 sm:left-12 right-8 sm:right-12 h-1 bg-surface-highest -translate-y-1/2 rounded-full" />
+                <div className="absolute top-4 sm:top-5 left-8 sm:left-12 right-8 sm:right-12 h-1 bg-surface-highest -translate-y-1/2 rounded-full" />
                 <div 
-                  className="absolute top-1/2 left-8 sm:left-12 h-1 bg-primary-container -translate-y-1/2 rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(202,253,0,0.3)]" 
+                  className="absolute top-4 sm:top-5 left-8 sm:left-12 h-1 bg-primary-container -translate-y-1/2 rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(202,253,0,0.3)]" 
                   style={{ width: `calc(${(LEVELS.findIndex(l => l.name === currentLevel.name) / (LEVELS.length - 1)) * 100}% - ${(LEVELS.findIndex(l => l.name === currentLevel.name) / (LEVELS.length - 1)) * 96}px)` }}
                 />
                 
@@ -774,7 +774,7 @@ export function PerfilPage() {
                   const isCurrent = lvl.name === currentLevel.name;
                   
                   return (
-                    <div key={lvl.name} className="flex flex-col items-center gap-2 sm:gap-3 relative">
+                    <div key={lvl.name} className="flex min-w-0 flex-col items-center gap-2 sm:gap-3 relative">
                       <div className={cn(
                         "h-8 w-8 sm:h-10 sm:w-10 rounded-full border-2 sm:border-4 ring-4 sm:ring-8 ring-surface-low grid place-items-center z-10 transition-all duration-500",
                         isPast ? "bg-primary-container border-primary-container" : 
@@ -783,9 +783,9 @@ export function PerfilPage() {
                       )}>
                         {isPast ? <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-on-primary-container" /> : <span className="text-sm sm:text-lg">{lvl.icon}</span>}
                       </div>
-                      <div className="text-center absolute -bottom-7 sm:bottom-[-2rem] w-20 sm:w-28 left-1/2 -translate-x-1/2">
+                      <div className="min-w-0 text-center w-14 sm:w-28">
                         <p className={cn(
-                          "text-[7px] sm:text-[9px] font-black uppercase tracking-wider leading-none",
+                          "break-words text-[7px] sm:text-[9px] font-black uppercase tracking-wider leading-none",
                           isCurrent ? lvl.color : "text-outline"
                         )}>
                           {lvl.name}
