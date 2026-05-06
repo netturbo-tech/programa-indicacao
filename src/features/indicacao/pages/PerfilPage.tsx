@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { CONTRATOS, SETORES, type Contrato, type Setor } from "../types";
+import type { Role } from "../types";
 import { supabase } from "@/integrations/supabase/client";
 import { PrimaryButton } from "../components/PrimaryButton";
 import {
