@@ -512,7 +512,7 @@ export function PerfilPage() {
       )}
 
       {/* Header Mobile - Nome e Nível */}
-      <div className="lg:hidden flex items-center justify-between bg-surface-low p-3 sm:p-4 rounded-2xl border border-outline-variant/10">
+      <div className="lg:hidden flex min-w-0 items-center justify-between overflow-hidden bg-surface-low p-3 sm:p-4 rounded-2xl border border-outline-variant/10">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
           <Avatar 
             name={displayUser.name} 
@@ -527,9 +527,9 @@ export function PerfilPage() {
             </span>
           </div>
         </div>
-        <div className="text-right shrink-0 pl-3">
+        <div className="min-w-0 text-right shrink-0 pl-2">
           <p className="text-[8px] text-outline uppercase font-black tracking-widest">Crédito</p>
-          <p className="text-primary-container font-display font-bold text-base sm:text-lg">
+          <p className="text-primary-container font-display font-bold text-sm sm:text-lg leading-tight">
             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(creditoAcumulado)}
           </p>
         </div>
@@ -658,21 +658,21 @@ export function PerfilPage() {
                           <Building2 className="h-4 w-4" />
                           <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Setor</span>
                         </div>
-                        <span className="text-white text-xs sm:text-sm font-bold truncate">{displayUser.setor}</span>
+                        <span className="min-w-0 text-right text-white text-xs sm:text-sm font-bold truncate">{displayUser.setor}</span>
                       </div>
                       <div className="flex items-center justify-between text-left gap-4">
                         <div className="flex items-center gap-3 text-outline shrink-0">
                           <FileText className="h-4 w-4" />
                           <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Contrato</span>
                         </div>
-                        <span className="text-white text-xs sm:text-sm font-bold truncate">{displayUser.contrato}</span>
+                        <span className="min-w-0 text-right text-white text-xs sm:text-sm font-bold truncate">{displayUser.contrato}</span>
                       </div>
                       <div className="flex items-center justify-between text-left gap-4">
                         <div className="flex items-center gap-3 text-outline shrink-0">
                           <Briefcase className="h-4 w-4" />
                           <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Função</span>
                         </div>
-                        <span className="text-white text-xs sm:text-sm font-bold truncate">{displayUser.funcao || "-"}</span>
+                        <span className="min-w-0 text-right text-white text-xs sm:text-sm font-bold truncate">{displayUser.funcao || "-"}</span>
                       </div>
                     </div>
                   </>
