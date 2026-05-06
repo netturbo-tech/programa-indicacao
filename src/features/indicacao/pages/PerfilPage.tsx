@@ -758,34 +758,35 @@ export function PerfilPage() {
 
           {/* Evolução de Nível */}
           <div className="min-w-0 bg-surface-low rounded-2xl sm:rounded-3xl border border-outline-variant/10 p-4 sm:p-8 overflow-hidden">
-            <h3 className="font-display font-bold text-white uppercase tracking-tight mb-6 sm:mb-8 text-sm sm:text-base">Evolução de Nível</h3>
+            <h3 className="font-display font-bold text-white uppercase tracking-tight mb-4 sm:mb-8 text-sm sm:text-base">Evolução de Nível</h3>
             
-            <div className="pb-6">
-              <div className="relative mb-8 sm:mb-10 px-3 sm:px-12">
-                <div className="absolute top-4 sm:top-5 left-8 sm:left-12 right-8 sm:right-12 h-1 bg-surface-highest -translate-y-1/2 rounded-full" />
+            {/* Desktop View */}
+            <div className="hidden sm:block pb-6">
+              <div className="relative mb-10 px-12">
+                <div className="absolute top-5 left-[104px] right-[104px] h-1 bg-surface-highest -translate-y-1/2 rounded-full" />
                 <div 
-                  className="absolute top-4 sm:top-5 left-8 sm:left-12 h-1 bg-primary-container -translate-y-1/2 rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(202,253,0,0.3)]" 
-                  style={{ width: `calc(${(LEVELS.findIndex(l => l.name === currentLevel.name) / (LEVELS.length - 1)) * 100}% - ${(LEVELS.findIndex(l => l.name === currentLevel.name) / (LEVELS.length - 1)) * 96}px)` }}
+                  className="absolute top-5 left-[104px] h-1 bg-primary-container -translate-y-1/2 rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(202,253,0,0.3)]" 
+                  style={{ width: `calc(${(LEVELS.findIndex(l => l.name === currentLevel.name) / (LEVELS.length - 1)) * 100}% - ${(LEVELS.findIndex(l => l.name === currentLevel.name) / (LEVELS.length - 1)) * 208}px)` }}
                 />
                 
                 <div className="relative flex justify-between">
-                {LEVELS.map((lvl, i) => {
+                {LEVELS.map((lvl) => {
                   const isPast = conversoes >= lvl.min && lvl.name !== currentLevel.name;
                   const isCurrent = lvl.name === currentLevel.name;
                   
                   return (
-                    <div key={lvl.name} className="flex min-w-0 flex-col items-center gap-2 sm:gap-3 relative">
+                    <div key={lvl.name} className="flex min-w-0 flex-col items-center gap-3 relative">
                       <div className={cn(
-                        "h-8 w-8 sm:h-10 sm:w-10 rounded-full border-2 sm:border-4 ring-4 sm:ring-8 ring-surface-low grid place-items-center z-10 transition-all duration-500",
+                        "h-10 w-10 rounded-full border-4 ring-8 ring-surface-low grid place-items-center z-10 transition-all duration-500",
                         isPast ? "bg-primary-container border-primary-container" : 
                         isCurrent ? "bg-surface-low border-primary-container animate-pulse shadow-[0_0_20px_rgba(202,253,0,0.4)]" : 
                         "bg-surface-highest border-surface-highest"
                       )}>
-                        {isPast ? <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-on-primary-container" /> : <span className="text-sm sm:text-lg">{lvl.icon}</span>}
+                        {isPast ? <CheckCircle2 className="h-5 w-5 text-on-primary-container" /> : <span className="text-lg">{lvl.icon}</span>}
                       </div>
-                      <div className="min-w-0 text-center w-14 sm:w-28">
+                      <div className="min-w-0 text-center w-28">
                         <p className={cn(
-                          "break-words text-[7px] sm:text-[9px] font-black uppercase tracking-wider leading-none",
+                          "break-words text-[9px] font-black uppercase tracking-wider leading-none",
                           isCurrent ? lvl.color : "text-outline"
                         )}>
                           {lvl.name}
@@ -796,6 +797,65 @@ export function PerfilPage() {
                 })}
               </div>
             </div>
+            </div>
+
+            {/* Mobile View (Slides) */}
+            <div className="sm:hidden -mx-4 px-4 pb-2">
+              <div className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-4 pt-2 custom-scrollbar">
+                {LEVELS.map((lvl, index) => {
+                  const isPast = conversoes >= lvl.min && lvl.name !== currentLevel.name;
+                  const isCurrent = lvl.name === currentLevel.name;
+                  
+                  const progress = isPast ? 100 : 
+                    (isCurrent ? 
+                      (lvl.max === Infinity ? 100 : Math.min(100, Math.max(0, ((conversoes - lvl.min) / (lvl.max - lvl.min + 1)) * 100))) 
+                      : 0);
+
+                  return (
+                    <div 
+                      key={lvl.name} 
+                      className={cn(
+                        "flex-none w-[75vw] max-w-[280px] snap-center rounded-2xl border p-4 flex flex-col gap-4 transition-all",
+                        isCurrent ? "border-primary-container/50 bg-primary-container/5" : "border-outline-variant/10 bg-surface-highest/30"
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "h-10 w-10 shrink-0 rounded-full border-2 grid place-items-center transition-all duration-500",
+                          isPast ? "bg-primary-container border-primary-container text-on-primary-container" : 
+                          isCurrent ? "bg-surface-low border-primary-container shadow-[0_0_15px_rgba(202,253,0,0.3)]" : 
+                          "bg-surface-highest border-surface-highest text-outline"
+                        )}>
+                          {isPast ? <CheckCircle2 className="h-5 w-5" /> : <span className="text-lg">{lvl.icon}</span>}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className={cn("text-sm font-black uppercase tracking-wider truncate", isCurrent ? lvl.color : isPast ? "text-white" : "text-outline")}>
+                            {lvl.name}
+                          </h4>
+                          <p className="text-[10px] text-outline truncate mt-0.5">
+                            {lvl.min} {lvl.max === Infinity ? "ou mais" : `- ${lvl.max}`} conversões
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between text-[10px] font-bold">
+                          <span className="text-outline uppercase tracking-wider">Progresso</span>
+                          <span className={isCurrent ? "text-primary-container" : "text-outline"}>
+                            {isPast ? "Concluído" : `${Math.floor(progress)}%`}
+                          </span>
+                        </div>
+                        <div className="h-1.5 w-full bg-surface-highest rounded-full overflow-hidden border border-outline-variant/10">
+                          <div 
+                            className={cn("h-full rounded-full transition-all duration-1000", isPast ? "bg-primary-container" : isCurrent ? "bg-primary-container shadow-[0_0_10px_rgba(202,253,0,0.5)]" : "bg-transparent")}
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="mt-16 space-y-4">
