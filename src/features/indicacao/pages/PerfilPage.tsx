@@ -823,9 +823,9 @@ export function PerfilPage() {
           </div>
 
           {/* Conquistas */}
-          <div className="bg-surface-low rounded-3xl border border-outline-variant/10 p-5 sm:p-8">
+          <div className="min-w-0 bg-surface-low rounded-2xl sm:rounded-3xl border border-outline-variant/10 p-4 sm:p-8 overflow-hidden">
             <h3 className="font-display font-bold text-white uppercase tracking-tight mb-6 text-sm sm:text-base">Conquistas</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="grid min-w-0 grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
               {achievements.map((ach) => (
                 <Tooltip key={ach.id}>
                   <TooltipTrigger asChild>
@@ -833,7 +833,7 @@ export function PerfilPage() {
                       role="button"
                       tabIndex={0}
                       className={cn(
-                        "relative p-4 rounded-2xl border transition-all duration-300 flex flex-col items-center text-center gap-2 overflow-hidden cursor-help outline-none focus-visible:ring-2 focus-visible:ring-primary-container/50",
+                        "relative min-w-0 p-3 sm:p-4 rounded-2xl border transition-all duration-300 flex flex-col items-center text-center gap-2 overflow-hidden cursor-help outline-none focus-visible:ring-2 focus-visible:ring-primary-container/50",
                         ach.unlocked 
                           ? "bg-primary-container/5 border-primary-container/20" 
                           : "bg-surface-high/30 border-outline-variant/5 grayscale opacity-60"
@@ -845,7 +845,7 @@ export function PerfilPage() {
                       )}>
                         <ach.icon className="h-6 w-6" />
                       </div>
-                      <p className="text-[10px] font-black uppercase tracking-wider text-white leading-tight h-8 flex items-center">
+                      <p className="max-w-full break-words text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-white leading-tight min-h-8 flex items-center">
                         {ach.title}
                       </p>
                       {!ach.unlocked && (
@@ -875,12 +875,12 @@ export function PerfilPage() {
           </div>
 
           {/* Histórico Resumido */}
-          <div className="bg-surface-low rounded-3xl border border-outline-variant/10 overflow-hidden">
-            <div className="p-8 pb-4 flex items-center justify-between">
-              <h3 className="font-display font-bold text-white uppercase tracking-tight">Últimas Indicações</h3>
+          <div className="min-w-0 bg-surface-low rounded-2xl sm:rounded-3xl border border-outline-variant/10 overflow-hidden">
+            <div className="p-4 sm:p-8 sm:pb-4 flex items-center justify-between gap-3">
+              <h3 className="min-w-0 font-display font-bold text-white uppercase tracking-tight text-sm sm:text-base">Últimas Indicações</h3>
               <Link 
                 to="/app/indicacoes" 
-                className="text-xs font-black uppercase tracking-widest text-primary-container hover:underline flex items-center gap-1"
+                className="shrink-0 text-[10px] sm:text-xs font-black uppercase tracking-widest text-primary-container hover:underline flex items-center gap-1"
               >
                 Ver todas <ChevronRight className="h-3 w-3" />
               </Link>
