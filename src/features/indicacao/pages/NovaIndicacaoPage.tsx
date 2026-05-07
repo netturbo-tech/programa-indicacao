@@ -229,7 +229,7 @@ export function NovaIndicacaoPage() {
                 placeholder="Ex: Tech Solutions"
               />
               <EditorialField
-                label="Telefone"
+                label="Celular"
                 value={form.telefone}
                 onChange={(v) => setForm({ ...form, telefone: maskPhone(v) })}
                 placeholder="+55 (XX) XXXXX-XXXX"
