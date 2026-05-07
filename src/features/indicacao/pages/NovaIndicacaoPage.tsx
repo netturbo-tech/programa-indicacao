@@ -263,24 +263,28 @@ export function NovaIndicacaoPage() {
                 label="Seu Email"
                 value={form.emailIndicador}
                 onChange={(v) => setForm({ ...form, emailIndicador: v })}
+                readOnly
               />
               <EditorialField
                 label="Sua Função"
                 value={form.funcao}
                 onChange={(v) => setForm({ ...form, funcao: v })}
                 placeholder="Cargo atual"
+                readOnly
               />
               <EditorialSelect
                 label="Seu Setor"
                 value={form.setor}
                 onChange={(v) => setForm({ ...form, setor: v as Setor })}
                 options={SETORES}
+                readOnly
               />
               <EditorialSelect
                 label="Tipo de Contrato"
                 value={form.contrato}
                 onChange={(v) => setForm({ ...form, contrato: v as Contrato })}
                 options={["CLT", "PJ"]}
+                readOnly
               />
             </div>
           </section>
@@ -390,12 +394,14 @@ function EditorialField({
   onChange,
   placeholder,
   type = "text",
+  readOnly,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
   type?: string;
+  readOnly?: boolean;
 }) {
   return (
     <div className="group space-y-2">
@@ -407,7 +413,9 @@ function EditorialField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full bg-transparent border-0 border-b border-outline-variant/30 py-2 px-0 text-on-surface placeholder:text-outline-variant/50 outline-none focus:outline-none focus:ring-0 focus:border-primary-container caret-primary-container transition-all text-sm font-medium"
+        readOnly={readOnly}
+        tabIndex={readOnly ? -1 : undefined}
+        className={`w-full bg-transparent border-0 border-b border-outline-variant/30 py-2 px-0 placeholder:text-outline-variant/50 outline-none focus:outline-none focus:ring-0 transition-all text-sm font-medium ${readOnly ? "text-on-surface-variant cursor-not-allowed" : "text-on-surface focus:border-primary-container caret-primary-container"}`}
       />
     </div>
   );
@@ -418,12 +426,26 @@ function EditorialSelect({
   value,
   options,
   onChange,
+  readOnly,
 }: {
   label: string;
   value: string;
   options: readonly string[];
   onChange: (v: string) => void;
+  readOnly?: boolean;
 }) {
+  if (readOnly) {
+    return (
+      <div className="group space-y-2">
+        <label className="block text-[10px] uppercase tracking-[0.2em] text-outline font-black transition-colors">
+          {label}
+        </label>
+        <div className="w-full border-0 border-b border-outline-variant/30 py-2 px-0 text-sm font-medium text-on-surface-variant cursor-not-allowed">
+          {value}
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="group space-y-2">
       <label className="block text-[10px] uppercase tracking-[0.2em] text-outline font-black group-focus-within:text-primary-container transition-colors">
