@@ -12,7 +12,7 @@ const contatoSchema = z.object({
   razaoSocial: z.string().trim().max(200),
   nomeFantasia: z.string().trim().max(200),
   telefoneFixo: z.string().trim().max(20),
-  celular: z.string().trim().max(20),
+  celular: z.string().trim().min(1, "Celular é obrigatório").max(20),
   observacao: z.string().trim().max(1000),
 });
 
@@ -107,7 +107,7 @@ export function NovoContatoPage() {
     e.preventDefault();
     const parsed = contatoSchema.safeParse(form);
     if (!parsed.success) {
-      toast.error("Preencha Nome, Email e CNPJ.");
+      toast.error("Preencha Nome, Email, CNPJ e Celular.");
       return;
     }
     const result = await createContato(parsed.data);
@@ -221,16 +221,16 @@ export function NovoContatoPage() {
                placeholder="contato@empresa.com"
              />
             <EditorialField
+              label="Celular *"
+              value={form.celular}
+              onChange={(v) => setForm({ ...form, celular: maskPhone(v) })}
+              placeholder="(XX) XXXXX-XXXX"
+            />
+            <EditorialField
               label="Telefone Fixo"
               value={form.telefoneFixo}
               onChange={(v) => setForm({ ...form, telefoneFixo: maskPhone(v) })}
               placeholder="(XX) XXXX-XXXX"
-            />
-            <EditorialField
-              label="Celular"
-              value={form.celular}
-              onChange={(v) => setForm({ ...form, celular: maskPhone(v) })}
-              placeholder="(XX) XXXXX-XXXX"
             />
             <EditorialTextarea
               label="Observações"
