@@ -73,10 +73,33 @@ export function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle
       items: [{ to: "/app/perfil", label: user.role === "aprovador" ? "Consultar Perfil" : "Meu Perfil", Icon: User }]
     });
 
+    // usuario_ra: formulários logo após o perfil
+    if (user.role === "usuario_ra") {
+      sections.push({
+        title: "Operações",
+        items: [
+          { to: "/app/nova", label: "Nova Indicação", Icon: PlusCircle },
+          { to: "/app/novo-contato", label: "Novo Contato Quente", Icon: UserPlus },
+        ],
+      });
+      sections.push({
+        title: "Registros",
+        items: [
+          { to: "/app/indicacoes", label: "Indicações", Icon: ListChecks },
+          { to: "/app/contatos", label: "Contatos Quentes", Icon: Contact },
+        ],
+      });
+      sections.push({
+        title: "Sistema",
+        items: [{ to: "/app/analytics", label: "Analytics", Icon: BarChart3 }],
+      });
+      return sections;
+    }
+
     // Registros
     const registros = [];
     registros.push({ to: "/app/indicacoes", label: user.role === "admin" ? "Registros" : "Indicações", Icon: ListChecks });
-    if (user.role === "aprovador" || user.role === "usuario_ra") {
+    if (user.role === "aprovador") {
       registros.push({ to: "/app/contatos", label: "Contatos Quentes", Icon: Contact });
     }
     sections.push({ title: "Registros", items: registros });
@@ -97,7 +120,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle
     if (user.role !== "aprovador") {
       acoes.push({ to: "/app/nova", label: "Nova Indicação", Icon: PlusCircle });
     }
-    if (user.role === "admin" || user.role === "usuario_ra") {
+    if (user.role === "admin") {
       acoes.push({ to: "/app/novo-contato", label: "Novo Contato Quente", Icon: UserPlus });
     }
     if (acoes.length > 0) {
