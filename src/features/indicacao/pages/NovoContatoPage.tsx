@@ -150,55 +150,11 @@ export function NovoContatoPage() {
       </header>
 
       <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Section 01: CNPJ Lookup */}
+        {/* Section 01: Contato */}
         <section className="space-y-5">
           <div className="flex items-center gap-3">
             <span className="font-display text-2xl font-bold text-outline-variant/30 italic">
               01
-            </span>
-            <h2 className="font-display text-sm font-bold uppercase tracking-widest">
-              Identificação Empresarial
-            </h2>
-            <div className="h-px flex-1 bg-outline-variant/10" />
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-x-8 gap-y-5">
-            <div className="relative">
-              <EditorialField
-                label="CNPJ"
-                value={form.cnpj}
-                onChange={(v) => setForm({ ...form, cnpj: maskCnpj(v) })}
-                placeholder="00.000.000/0000-00"
-              />
-              {loadingCnpj && (
-                <div className="absolute right-0 bottom-2 flex items-center gap-2 text-[10px] uppercase tracking-widest text-primary-container font-bold">
-                  <Loader2 className="h-3 w-3 animate-spin" /> Buscando...
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-x-8 gap-y-5">
-            <EditorialField
-              label="Razão Social"
-              value={form.razaoSocial}
-              onChange={(v) => setForm({ ...form, razaoSocial: v })}
-              placeholder="Preenchido automaticamente"
-            />
-            <EditorialField
-              label="Nome Fantasia"
-              value={form.nomeFantasia}
-              onChange={(v) => setForm({ ...form, nomeFantasia: v })}
-              placeholder="Preenchido automaticamente"
-            />
-          </div>
-        </section>
-
-        {/* Section 02: Contato */}
-        <section className="space-y-5">
-          <div className="flex items-center gap-3">
-            <span className="font-display text-2xl font-bold text-outline-variant/30 italic">
-              02
             </span>
             <h2 className="font-display text-sm font-bold uppercase tracking-widest">
               Dados de Contato
@@ -237,6 +193,50 @@ export function NovoContatoPage() {
               value={form.observacao}
               onChange={(v) => setForm({ ...form, observacao: v.slice(0, 1000) })}
               placeholder="Informações relevantes sobre o lead"
+            />
+          </div>
+        </section>
+
+        {/* Section 02: CNPJ Lookup */}
+        <section className="space-y-5">
+          <div className="flex items-center gap-3">
+            <span className="font-display text-2xl font-bold text-outline-variant/30 italic">
+              02
+            </span>
+            <h2 className="font-display text-sm font-bold uppercase tracking-widest">
+              Identificação Empresarial
+            </h2>
+            <div className="h-px flex-1 bg-outline-variant/10" />
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-x-8 gap-y-5">
+            <div className="relative">
+              <EditorialField
+                label="CNPJ"
+                value={form.cnpj}
+                onChange={(v) => setForm({ ...form, cnpj: maskCnpj(v) })}
+                placeholder="00.000.000/0000-00"
+              />
+              {loadingCnpj && (
+                <div className="absolute right-0 bottom-2 flex items-center gap-2 text-[10px] uppercase tracking-widest text-primary-container font-bold">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Buscando...
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-x-8 gap-y-5">
+            <EditorialField
+              label="Razão Social"
+              value={form.razaoSocial}
+              onChange={(v) => setForm({ ...form, razaoSocial: v })}
+              placeholder="Preenchido automaticamente"
+            />
+            <EditorialField
+              label="Nome Fantasia"
+              value={form.nomeFantasia}
+              onChange={(v) => setForm({ ...form, nomeFantasia: v })}
+              placeholder="Preenchido automaticamente"
             />
           </div>
         </section>
