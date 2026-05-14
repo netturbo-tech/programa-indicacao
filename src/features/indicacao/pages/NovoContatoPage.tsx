@@ -8,7 +8,7 @@ import { PrimaryButton } from "../components/PrimaryButton";
 const contatoSchema = z.object({
   nome: z.string().trim().min(1).max(100),
   email: z.string().trim().email().max(255),
-  cnpj: z.string().trim().min(1).max(18),
+  cnpj: z.string().trim().max(18),
   razaoSocial: z.string().trim().max(200),
   nomeFantasia: z.string().trim().max(200),
   telefoneFixo: z.string().trim().max(20),
@@ -107,7 +107,7 @@ export function NovoContatoPage() {
     e.preventDefault();
     const parsed = contatoSchema.safeParse(form);
     if (!parsed.success) {
-      toast.error("Preencha Nome, Email, CNPJ e Celular.");
+      toast.error("Preencha Nome, Email e Celular.");
       return;
     }
     const result = await createContato(parsed.data);
@@ -165,7 +165,7 @@ export function NovoContatoPage() {
           <div className="grid md:grid-cols-2 gap-x-8 gap-y-5">
             <div className="relative">
               <EditorialField
-                label="CNPJ *"
+                label="CNPJ"
                 value={form.cnpj}
                 onChange={(v) => setForm({ ...form, cnpj: maskCnpj(v) })}
                 placeholder="00.000.000/0000-00"
