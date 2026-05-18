@@ -34,6 +34,8 @@ function fmtDate(iso: string) {
 export function IndicacoesPage() {
   const {
     user,
+    avatar,
+    getAvatar,
     visibleIndicacoes,
     updateStatus,
     updateIndicacao,
@@ -341,6 +343,7 @@ export function IndicacoesPage() {
                             <Avatar
                               name={i.criadoPorNome}
                               size="sm"
+                              src={getAvatar(i.criadoPorId)}
                               className="ring-2 ring-primary-container/20"
                             />
                             <span className="text-xs font-bold uppercase tracking-tight text-on-surface">
@@ -503,6 +506,7 @@ export function IndicacoesPage() {
                             <Avatar
                               name={c.criadoPorNome}
                               size="sm"
+                              src={getAvatar(c.criadoPorId)}
                               className="ring-2 ring-sky-500/20"
                             />
                             <span className="text-xs font-bold uppercase tracking-tight text-on-surface">

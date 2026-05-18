@@ -19,11 +19,17 @@ import type {
 } from "./types";
 import { LIMITE_CLT_MES, VALOR_RECOMPENSA } from "./types";
 import { authEmailForIdentifier } from "./authIdentifiers";
-import { replaceAuthEmail } from "./authActions";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import type { Session } from "@supabase/supabase-js";
 import { toast } from "sonner";
+
+export const LEVELS = [
+  { name: "Gente Turbo", min: 0, max: 2, icon: "🌱", color: "text-primary-container", bg: "bg-primary-container", border: "border-primary-container/20" },
+  { name: "Conector", min: 3, max: 6, icon: "🦖", color: "text-blue-400", bg: "bg-blue-400", border: "border-blue-400/20" },
+  { name: "Acelerador", min: 7, max: 12, icon: "🔥", color: "text-orange-500", bg: "bg-orange-500", border: "border-orange-500/20" },
+  { name: "Sangue Verde", min: 13, max: Infinity, icon: "💚", color: "text-emerald-500", bg: "bg-emerald-500", border: "border-emerald-500/20" }
+];
 
 const now = () => new Date().toISOString();
 type IndicacaoUpdate = Database["public"]["Tables"]["indicacoes"]["Update"];
@@ -91,6 +97,11 @@ interface AppContextValue {
   ) => Promise<{ ok: boolean; error?: string }>;
   updateContato: (id: string, patch: Partial<Contato>) => void;
   deleteContato: (id: string) => void;
+  meta: number;
+  setMeta: (value: number) => void;
+  avatar: string | null;
+  setAvatar: (value: string | null) => void;
+  getAvatar: (userId: string) => string | null;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -169,6 +180,85 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<User[]>([]);
   const [indicacoes, setIndicacoes] = useState<Indicacao[]>([]);
   const [contatos, setContatos] = useState<Contato[]>([]);
+  const [meta, setMeta] = useState<number>(() => {
+    const stored = typeof window !== "undefined" ? localStorage.getItem("meta_trimestral_global") : null;
+    return stored ? parseInt(stored) : 10;
+  });
+  const [allAvatars, setAllAvatars] = useState<Record<string, string>>(() => {
+    return {};
+  });
+
+  const avatar = user ? allAvatars[user.id] || null : null;
+
+  const getAvatar = useCallback((userId: string) => {
+    return allAvatars[userId] || null;
+  }, [allAvatars]);
+
+  const setAvatar = useCallback(async (data: string | null) => {
+    if (!user) return;
+    const userId = user.authUserId || user.id;
+
+    let publicUrl: string | null = null;
+
+    if (data) {
+      // data is a data URL (base64). Convert to Blob and upload to storage.
+      try {
+        const res = await fetch(data);
+        const blob = await res.blob();
+        const ext = (blob.type.split("/")[1] || "png").split("+")[0];
+        const path = `${userId}/avatar-${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("avatars")
+          .upload(path, blob, { upsert: true, contentType: blob.type });
+        if (upErr) {
+          toast.error("Erro ao enviar avatar: " + upErr.message);
+          return;
+        }
+        const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+        publicUrl = urlData.publicUrl;
+      } catch (err: any) {
+        toast.error("Erro ao processar imagem: " + (err?.message || ""));
+        return;
+      }
+    }
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ avatar_url: publicUrl })
+      .eq("user_id", userId);
+
+    if (error) {
+      toast.error("Erro ao salvar avatar: " + error.message);
+      return;
+    }
+
+    setAllAvatars((prev) => {
+      const next = { ...prev };
+      if (publicUrl) next[user.id] = publicUrl;
+      else delete next[user.id];
+      return next;
+    });
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      const userMetaKey = `meta_trimestral_${user.id}`;
+      const storedMeta = localStorage.getItem(userMetaKey);
+      if (storedMeta) {
+        setMeta(parseInt(storedMeta));
+      } else {
+        const globalStored = localStorage.getItem("meta_trimestral_global");
+        if (globalStored) setMeta(parseInt(globalStored));
+      }
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem(`meta_trimestral_${user.id}`, meta.toString());
+      localStorage.setItem("meta_trimestral_global", meta.toString());
+    }
+  }, [meta, user]);
 
   useEffect(() => {
     let cancelled = false;
@@ -249,6 +339,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       setIndicacoes(indicacoesResult.data?.map(mapIndicacao) ?? []);
       setContatos(contatosResult.data?.map(mapContato) ?? []);
+
+      // Load all avatars (RLS allows authenticated users to view all profiles)
+      const { data: avatarRows } = await supabase
+        .from("profiles")
+        .select("user_id, avatar_url")
+        .not("avatar_url", "is", null);
+      if (!cancelled && requestVersion === loadVersion && avatarRows) {
+        const map: Record<string, string> = {};
+        for (const row of avatarRows) {
+          if (row.avatar_url) map[row.user_id] = row.avatar_url;
+        }
+        setAllAvatars(map);
+      }
     };
 
     const {
@@ -399,27 +502,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     async (updates: Partial<User>) => {
       if (!user) return { ok: false, error: "Usuário não autenticado." };
 
+      const sanitizedUpdates = Object.fromEntries(
+        Object.entries(updates).filter(([, value]) => value !== undefined),
+      ) as Partial<User>;
+
       const updatedUser: User = {
         ...user,
-        ...updates,
+        ...sanitizedUpdates,
         onboardingCompleted: true,
       };
 
       // Se o usuário forneceu um novo e-mail real (ex.: Usuário RA cadastrado
       // sem e-mail), atualiza também o e-mail de autenticação no Supabase Auth.
-      const newEmail = (updates as { email?: string }).email?.trim();
+      const newEmail = (sanitizedUpdates as { email?: string }).email?.trim();
       const currentEmail = user.email?.trim();
-      if (newEmail && newEmail.toLowerCase() !== currentEmail?.toLowerCase()) {
-        const result = await replaceAuthEmail({
-          data: { userId: user.id, newEmail: newEmail.toLowerCase() },
-        });
-        if (!result.ok) {
-          return { ok: false, error: result.error };
-        }
-        updatedUser.email = result.email ?? newEmail.toLowerCase();
+      const needsAuthEmailUpdate =
+        !!newEmail && newEmail.toLowerCase() !== currentEmail?.toLowerCase();
+      if (needsAuthEmailUpdate) {
+        updatedUser.email = newEmail!.toLowerCase();
         updatedUser.loginId = updatedUser.email;
-        // Refresh session so the JWT carries the new email immediately.
-        await supabase.auth.refreshSession();
       }
 
       if (supabase) {
@@ -440,6 +541,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .from("profiles")
           .upsert(payload, { onConflict: "user_id" });
         if (error) return { ok: false, error: `Erro no banco de dados: ${error.message}` };
+      }
+
+      if (needsAuthEmailUpdate) {
+        const { data: result, error: fnError } = await supabase.functions.invoke(
+          "replace-auth-email",
+          { body: { newEmail: updatedUser.email } },
+        );
+        if (fnError || !result?.ok) {
+          return {
+            ok: false,
+            error: result?.error || fnError?.message || "Erro ao atualizar e-mail.",
+          };
+        }
+        updatedUser.email = result.email ?? updatedUser.email;
+        updatedUser.loginId = updatedUser.email;
+        await supabase.auth.refreshSession();
       }
 
       setUsers((prev) => prev.map((u) => (u.id === user.id ? updatedUser : u)));
@@ -762,6 +879,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       createContato,
       updateContato,
       deleteContato,
+      meta,
+      setMeta,
+      avatar,
+      setAvatar,
+      getAvatar,
     }),
     [
       user,
@@ -785,6 +907,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       createContato,
       updateContato,
       deleteContato,
+      meta,
+      setMeta,
+      avatar,
+      setAvatar,
+      getAvatar,
     ],
   );
 

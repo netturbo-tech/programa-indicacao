@@ -1,19 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { createClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Database } from "@/integrations/supabase/types";
 
 const credentialsSchema = z.object({
   identifier: z.string().trim().min(3).max(255),
   password: z.string().min(6).max(128),
-});
-
-const identifierSchema = z.object({
-  identifier: z.string().trim().min(3).max(255),
-});
-
-const replaceEmailSchema = z.object({
-  userId: z.string().uuid(),
-  newEmail: z.string().trim().email().max(255),
 });
 
 function normalizeIdentifier(identifier: string) {
@@ -31,6 +25,14 @@ function cpfMask(digits: string) {
     .replace(/\.(\d{3})(\d)/, ".$1-$2");
 }
 
+/**
+ * Strip PostgREST OR-filter special characters from a value before
+ * interpolating into `.or()`. Prevents filter injection.
+ */
+function sanitizeFilterValue(value: string) {
+  return value.replace(/[,()"]/g, "");
+}
+
 function authEmailForIdentifier(identifier: string) {
   const normalized = normalizeIdentifier(identifier);
   if (normalized.type === "email") return normalized.value;
@@ -39,8 +41,21 @@ function authEmailForIdentifier(identifier: string) {
 }
 
 export const registerAuthUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input) => credentialsSchema.parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    // Only admins can create accounts via the privileged admin API.
+    const { data: roleRow, error: roleError } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    if (roleError || !roleRow) {
+      return { ok: false, error: "Apenas administradores podem criar contas." };
+    }
+
     const normalized = normalizeIdentifier(data.identifier);
     const email = authEmailForIdentifier(data.identifier);
 
@@ -74,72 +89,77 @@ export const registerAuthUser = createServerFn({ method: "POST" })
     return { ok: true, email };
   });
 
-export const resolveLoginIdentifier = createServerFn({ method: "POST" })
-  .inputValidator((input) => identifierSchema.parse(input))
+/**
+ * Resolve and sign in by identifier (email/CPF/RA) in a single server-side
+ * step. The client never sees the resolved auth email — and an invalid
+ * identifier returns the same generic error as a wrong password, which
+ * prevents user enumeration.
+ */
+export const loginWithIdentifier = createServerFn({ method: "POST" })
+  .inputValidator((input) => credentialsSchema.parse(input))
   .handler(async ({ data }) => {
     const normalized = normalizeIdentifier(data.identifier);
+    const genericError = "Credenciais inválidas." as const;
 
-    // Para e-mail, retorna direto sem consultar o banco.
+    const candidateEmails: string[] = [];
     if (normalized.type === "email") {
-      return { ok: true, email: normalized.value };
-    }
-
-    // Busca por CPF (com e sem máscara), RA ou login_identifier.
-    const filters =
-      normalized.type === "cpf"
-        ? [
-            `cpf.eq.${normalized.digits}`,
-            `cpf.eq.${cpfMask(normalized.digits)}`,
-            `login_identifier.eq.${normalized.value}`,
-          ]
-        : [
-            `ra.eq.${normalized.value}`,
-            `login_identifier.eq.${normalized.value}`,
-          ];
-
-    const { data: profile, error } = await supabaseAdmin
-      .from("profiles")
-      .select("email")
-      .or(filters.join(","))
-      .limit(1)
-      .maybeSingle();
-
-    if (error) {
-      return { ok: false, error: `Erro ao localizar cadastro: ${error.message}` };
-    }
-
-    if (!profile?.email) {
-      // Fallback: tenta o e-mail sintético antigo (contas criadas só por CPF/RA).
-      const fallback =
+      candidateEmails.push(normalized.value);
+    } else {
+      const filters =
         normalized.type === "cpf"
-          ? `${normalized.digits}@cpf.ntt-indicacoes.local`
-          : `${normalized.value.replace(/[^a-z0-9._-]/g, "-")}@ra.ntt-indicacoes.local`;
-      return { ok: true, email: fallback };
+          ? [
+              `cpf.eq.${sanitizeFilterValue(normalized.digits)}`,
+              `cpf.eq.${sanitizeFilterValue(cpfMask(normalized.digits))}`,
+              `login_identifier.eq.${sanitizeFilterValue(normalized.value)}`,
+            ]
+          : [
+              `ra.eq.${sanitizeFilterValue(normalized.value)}`,
+              `login_identifier.eq.${sanitizeFilterValue(normalized.value)}`,
+            ];
+
+      const { data: profile } = await supabaseAdmin
+        .from("profiles")
+        .select("email")
+        .or(filters.join(","))
+        .limit(1)
+        .maybeSingle();
+
+      if (profile?.email) candidateEmails.push(profile.email);
+      // Synthetic-email fallback for legacy CPF/RA-only accounts.
+      candidateEmails.push(authEmailForIdentifier(data.identifier));
     }
 
-    return { ok: true, email: profile.email };
-  });
+    const env = import.meta.env as Record<string, string | undefined>;
+    const SUPABASE_URL =
+      process.env.SUPABASE_URL || env.SUPABASE_URL || env.VITE_SUPABASE_URL;
+    const SUPABASE_PUBLISHABLE_KEY =
+      process.env.SUPABASE_PUBLISHABLE_KEY ||
+      env.SUPABASE_PUBLISHABLE_KEY ||
+      env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-export const replaceAuthEmail = createServerFn({ method: "POST" })
-  .inputValidator((input) => replaceEmailSchema.parse(input))
-  .handler(async ({ data }) => {
-    const newEmail = data.newEmail.trim().toLowerCase();
+    if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+      return { ok: false, error: "Configuração do servidor incompleta." } as const;
+    }
 
-    const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
-      email: newEmail,
-      email_confirm: true,
+    const anon = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
     });
-    if (authError) {
-      return { ok: false, error: `Erro ao atualizar e-mail no login: ${authError.message}` };
+
+    for (const email of candidateEmails) {
+      const { data: signIn, error } = await anon.auth.signInWithPassword({
+        email,
+        password: data.password,
+      });
+      if (!error && signIn.session) {
+        return {
+          ok: true as const,
+          session: {
+            access_token: signIn.session.access_token,
+            refresh_token: signIn.session.refresh_token,
+          },
+        };
+      }
     }
 
-    const { error: profileError } = await supabaseAdmin
-      .from("profiles")
-      .update({ email: newEmail, login_identifier: newEmail })
-      .eq("user_id", data.userId);
-    if (profileError) {
-      return { ok: false, error: `Erro ao atualizar e-mail no perfil: ${profileError.message}` };
-    }
-
-    return { ok: true, email: newEmail };
+    return { ok: false as const, error: genericError };
   });

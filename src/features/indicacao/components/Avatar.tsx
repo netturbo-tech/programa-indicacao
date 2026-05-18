@@ -21,7 +21,7 @@ function colorFor(name: string) {
   return PALETTE[h % PALETTE.length];
 }
 
-export function Avatar({ name, size = "md", className = "" }: { name: string; size?: "xs" | "sm" | "md" | "lg"; className?: string }) {
+export function Avatar({ name, size = "md", className = "", src }: { name: string; size?: "xs" | "sm" | "md" | "lg"; className?: string; src?: string | null }) {
   const dim =
     size === "xs"
       ? "h-6 w-6 text-[8px]"
@@ -32,10 +32,14 @@ export function Avatar({ name, size = "md", className = "" }: { name: string; si
       : "h-10 w-10 text-xs";
   return (
     <div
-      className={`grid place-items-center rounded-full font-bold shrink-0 ${dim} ${colorFor(name)} ${className}`}
+      className={`grid place-items-center rounded-full font-bold shrink-0 overflow-hidden ${dim} ${colorFor(name)} ${className}`}
       title={name}
     >
-      {initials(name)}
+      {src ? (
+        <img src={src} alt={name} className="h-full w-full object-cover" />
+      ) : (
+        initials(name)
+      )}
     </div>
   );
 }

@@ -8,11 +8,11 @@ import { PrimaryButton } from "../components/PrimaryButton";
 const contatoSchema = z.object({
   nome: z.string().trim().min(1).max(100),
   email: z.string().trim().email().max(255),
-  cnpj: z.string().trim().min(1).max(18),
+  cnpj: z.string().trim().max(18),
   razaoSocial: z.string().trim().max(200),
   nomeFantasia: z.string().trim().max(200),
   telefoneFixo: z.string().trim().max(20),
-  celular: z.string().trim().max(20),
+  celular: z.string().trim().min(1, "Celular é obrigatório").max(20),
   observacao: z.string().trim().max(1000),
 });
 
@@ -107,7 +107,7 @@ export function NovoContatoPage() {
     e.preventDefault();
     const parsed = contatoSchema.safeParse(form);
     if (!parsed.success) {
-      toast.error("Preencha Nome, Email e CNPJ.");
+      toast.error("Preencha Nome, Email e Celular.");
       return;
     }
     const result = await createContato(parsed.data);
@@ -150,11 +150,58 @@ export function NovoContatoPage() {
       </header>
 
       <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Section 01: CNPJ Lookup */}
+        {/* Section 01: Contato */}
         <section className="space-y-5">
           <div className="flex items-center gap-3">
             <span className="font-display text-2xl font-bold text-outline-variant/30 italic">
               01
+            </span>
+            <h2 className="font-display text-sm font-bold uppercase tracking-widest">
+              Dados de Contato
+            </h2>
+            <div className="h-px flex-1 bg-outline-variant/10" />
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-x-8 gap-y-5">
+            <EditorialField
+              label="Nome *"
+              value={form.nome}
+              onChange={(v) => setForm({ ...form, nome: v })}
+              placeholder="Ex: Carlos Oliveira"
+            />
+             <EditorialField
+               label="Email do Lead *"
+               type="email"
+               value={form.email}
+               onChange={(v) => setForm({ ...form, email: v })}
+               placeholder="contato@empresa.com"
+             />
+            <EditorialField
+              label="Celular *"
+              value={form.celular}
+              onChange={(v) => setForm({ ...form, celular: maskPhone(v) })}
+              placeholder="(XX) XXXXX-XXXX"
+            />
+            <EditorialField
+              label="Telefone Fixo"
+              value={form.telefoneFixo}
+              onChange={(v) => setForm({ ...form, telefoneFixo: maskPhone(v) })}
+              placeholder="(XX) XXXX-XXXX"
+            />
+            <EditorialTextarea
+              label="Observações"
+              value={form.observacao}
+              onChange={(v) => setForm({ ...form, observacao: v.slice(0, 1000) })}
+              placeholder="Informações relevantes sobre o lead"
+            />
+          </div>
+        </section>
+
+        {/* Section 02: CNPJ Lookup */}
+        <section className="space-y-5">
+          <div className="flex items-center gap-3">
+            <span className="font-display text-2xl font-bold text-outline-variant/30 italic">
+              02
             </span>
             <h2 className="font-display text-sm font-bold uppercase tracking-widest">
               Identificação Empresarial
@@ -165,7 +212,7 @@ export function NovoContatoPage() {
           <div className="grid md:grid-cols-2 gap-x-8 gap-y-5">
             <div className="relative">
               <EditorialField
-                label="CNPJ *"
+                label="CNPJ"
                 value={form.cnpj}
                 onChange={(v) => setForm({ ...form, cnpj: maskCnpj(v) })}
                 placeholder="00.000.000/0000-00"
@@ -190,53 +237,6 @@ export function NovoContatoPage() {
               value={form.nomeFantasia}
               onChange={(v) => setForm({ ...form, nomeFantasia: v })}
               placeholder="Preenchido automaticamente"
-            />
-          </div>
-        </section>
-
-        {/* Section 02: Contato */}
-        <section className="space-y-5">
-          <div className="flex items-center gap-3">
-            <span className="font-display text-2xl font-bold text-outline-variant/30 italic">
-              02
-            </span>
-            <h2 className="font-display text-sm font-bold uppercase tracking-widest">
-              Dados de Contato
-            </h2>
-            <div className="h-px flex-1 bg-outline-variant/10" />
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-x-8 gap-y-5">
-            <EditorialField
-              label="Nome *"
-              value={form.nome}
-              onChange={(v) => setForm({ ...form, nome: v })}
-              placeholder="Ex: Carlos Oliveira"
-            />
-             <EditorialField
-               label="Email do Lead *"
-               type="email"
-               value={form.email}
-               onChange={(v) => setForm({ ...form, email: v })}
-               placeholder="contato@empresa.com"
-             />
-            <EditorialField
-              label="Telefone Fixo"
-              value={form.telefoneFixo}
-              onChange={(v) => setForm({ ...form, telefoneFixo: maskPhone(v) })}
-              placeholder="(XX) XXXX-XXXX"
-            />
-            <EditorialField
-              label="Celular"
-              value={form.celular}
-              onChange={(v) => setForm({ ...form, celular: maskPhone(v) })}
-              placeholder="(XX) XXXXX-XXXX"
-            />
-            <EditorialTextarea
-              label="Observações"
-              value={form.observacao}
-              onChange={(v) => setForm({ ...form, observacao: v.slice(0, 1000) })}
-              placeholder="Informações relevantes sobre o lead"
             />
           </div>
         </section>

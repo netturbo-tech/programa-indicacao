@@ -228,7 +228,7 @@ function Field({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full border-0 border-b border-outline-variant/30 bg-transparent px-0 py-3 text-base font-medium text-on-surface transition-all placeholder:text-outline focus:border-primary-container focus:ring-0"
+        className="w-full border-0 border-b border-outline-variant/30 bg-transparent px-0 py-3 text-base font-medium text-on-surface transition-all placeholder:text-outline focus:border-primary-container focus:ring-0 focus:outline-none"
       />
     </div>
   );

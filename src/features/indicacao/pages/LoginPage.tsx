@@ -5,8 +5,7 @@ import { useApp } from "../AppContext";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { BackgroundGradientAnimation } from "@/components/ui/background-gradient-animation";
 import { supabase } from "@/integrations/supabase/client";
-import { authEmailForIdentifier, normalizeIdentifier } from "../authIdentifiers";
-import { resolveLoginIdentifier } from "../authActions";
+import { loginWithIdentifier } from "../authActions";
 
 const LAST_LOGIN_IDENTIFIER_KEY = "indicacao:last-login-identifier";
 const LOGIN_TIMEOUT_MS = 15000;
@@ -63,54 +62,29 @@ export function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      const normalized = normalizeIdentifier(email);
-      let loginEmail: string;
-
-      if (normalized.type === "email") {
-        loginEmail = normalized.value;
-      } else {
-        // CPF/RA: busca o e-mail real cadastrado no perfil.
-        const resolved = await withTimeout(
-          resolveLoginIdentifier({ data: { identifier: email } }),
-          "Tempo limite ao localizar cadastro.",
-        );
-        if (!resolved.ok || !resolved.email) {
-          setError(resolved.error || "Cadastro não encontrado para este CPF/RA.");
-          return;
-        }
-        loginEmail = resolved.email;
-      }
-
-      let { data: signInData, error: signInError } = await withTimeout(
-        supabase.auth.signInWithPassword({
-          email: loginEmail,
-          password: senha,
-        }),
+      const result = await withTimeout(
+        loginWithIdentifier({ data: { identifier: email, password: senha } }),
         "Tempo limite ao conectar com o Supabase.",
       );
 
-      // Fallback para contas antigas criadas com e-mail sintético de CPF/RA.
-      if (signInError && normalized.type !== "email") {
-        const synthetic = authEmailForIdentifier(email);
-        if (synthetic !== loginEmail) {
-          const retry = await withTimeout(
-            supabase.auth.signInWithPassword({
-              email: synthetic,
-              password: senha,
-            }),
-            "Tempo limite ao conectar com o Supabase.",
-          );
-          signInData = retry.data;
-          signInError = retry.error;
-        }
-      }
-
-      if (signInError) {
-        setError(loginErrorMessage(signInError.message));
+      if (!result.ok || !result.session) {
+        setError(loginErrorMessage(result.error || "invalid login credentials"));
         return;
       }
 
-      const result = await withTimeout(
+      const { data: setSessionData, error: setSessionError } = await supabase.auth.setSession({
+        access_token: result.session.access_token,
+        refresh_token: result.session.refresh_token,
+      });
+
+      if (setSessionError || !setSessionData.session) {
+        setError(loginErrorMessage(setSessionError?.message));
+        return;
+      }
+
+      const signInData = { user: setSessionData.user };
+
+      const profileResult = await withTimeout(
         registerUser({
           identifier: email,
           password: senha,
@@ -119,8 +93,8 @@ export function LoginPage() {
         "Tempo limite ao carregar o perfil do usuário.",
       );
 
-      if (!result.ok) {
-        setError(result.error || "Não foi possível carregar o perfil.");
+      if (!profileResult.ok) {
+        setError(profileResult.error || "Não foi possível carregar o perfil.");
         return;
       }
 
@@ -323,7 +297,7 @@ function Field({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full bg-transparent border-0 border-b border-outline-variant/30 py-2.5 px-0 pr-10 text-sm font-medium text-on-surface placeholder:text-outline focus:ring-0 focus:border-primary-container transition-all"
+          className="w-full bg-transparent border-0 border-b border-outline-variant/30 py-2.5 px-0 pr-10 text-sm font-medium text-on-surface placeholder:text-outline focus:ring-0 focus:outline-none focus:border-primary-container transition-all"
         />
         {showPasswordToggle && onTogglePassword && (
           <button
